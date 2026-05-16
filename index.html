@@ -3,7 +3,8 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<script>const WEHO_LOGO_URL="https://www.governmentjobs.com/AgencyPages/weho/agencyImages/download/weho_white_on_blue.jpg";</script>
+<script>
+const APP_REDIRECT_URL = 'https://wehohumanservices.github.io/LACAHSA-Reporting/';const WEHO_LOGO_URL="https://www.governmentjobs.com/AgencyPages/weho/agencyImages/download/weho_white_on_blue.jpg";</script>
 <title>LACAHSA Renter Protection & Homelessness Prevention Reporting Platform — City of West Hollywood</title>
 <script>
   const SUPABASE_URL = "https://ppimdipicqwphpilykto.supabase.co";
@@ -186,7 +187,7 @@ const REPORT_QUARTERS={
   'Q3-2026':{label:'Q3',fy:'FY 2025–26',period:'April 1 – June 30, 2026',start:'2026-04-01',end:'2026-06-30'},
   'Q4-2026':{label:'Q4',fy:'FY 2025–26',period:'July 1 – September 30, 2026',start:'2026-07-01',end:'2026-09-30'}
 };
-function redirectUrl(){return window.location.origin+window.location.pathname}function cleanUrl(){if(location.hash.includes('access_token')) history.replaceState({},document.title,redirectUrl())}
+function redirectUrl(){return APP_REDIRECT_URL || (window.location.origin+window.location.pathname)}function cleanUrl(){if(location.hash.includes('access_token')) history.replaceState({},document.title,redirectUrl())}
 function esc(s){return String(s??'').replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]))}function uid(p='id'){return p+'_'+Math.random().toString(36).slice(2,10)}function money(n){return '$'+Math.round(Number(n)||0).toLocaleString()}function pct(n){return !n?'0%':(n*100).toFixed(0)+'%'}function agencyName(id){return (AGENCIES.find(a=>a.id===id)||{}).name||id||'—'}function isCity(){return state.profile&&['city_admin','city_viewer'].includes(state.profile.user_type)}function isAdmin(){return state.profile&&state.profile.user_type==='city_admin'}function toast(m,k=''){let t=document.getElementById('toast');t.textContent=m;t.className='toast show '+k;setTimeout(()=>t.className='toast',2600)}
 function fiscalQuarter(d){if(!d)return'';let x=new Date(d+'T00:00:00');if(isNaN(x))return'';let t=x.toISOString().slice(0,10);for(const [key,q] of Object.entries(REPORT_QUARTERS)){if(t>=q.start&&t<=q.end)return q.label+' '+q.fy}let m=x.getMonth()+1;let y=x.getFullYear();if(m>=10)return 'Q1 FY '+(y+1);if(m<=3)return 'Q2 FY '+y;if(m<=6)return 'Q3 FY '+y;return 'Q4 FY '+y}function dateOnly(v){return v?String(v).slice(0,10):''}
 function betweenDates(d,start,end){d=dateOnly(d);return !!d&&d>=start&&d<=end}
