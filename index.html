@@ -159,10 +159,11 @@ input[type="date"]{cursor:pointer;}
 }
 
 </style>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 </head>
 <body>
 <div id="login" class="login"><div class="login-card"><div class="login-head"><p class="eyebrow">City of West Hollywood</p><h1>LACAHSA Renter Protection & Homelessness Prevention Reporting Platform</h1></div><div class="login-body"><form id="login-form"><div class="field"><label>Email address</label><input type="email" id="login-email" required placeholder="name@agency.org" autocomplete="email"></div><button class="btn" type="submit" style="width:100%">Send secure magic link</button></form><div id="login-msg"></div></div></div></div>
-<div id="app" class="hidden"><header class="topbar"><div class="brand"><div class="logo"><img src="https://www.governmentjobs.com/AgencyPages/weho/agencyImages/download/weho_white_on_blue.jpg" alt="City of West Hollywood logo"></div><div><div class="brand-title">LACAHSA Renter Protection & Homelessness Prevention Reporting Platform</div><div class="brand-sub">Homelessness Prevention & Housing Stabilization · FY26</div></div></div><div class="top-actions"><span class="pill" id="agency-pill">—</span><span class="pill" id="role-pill">—</span><span class="pill" id="user-pill">—</span><button class="btn secondary sm" id="logout-btn">Sign out</button></div></header><div class="shell"><aside class="side"><div class="side-label">Workspace</div><button class="navbtn active" data-view="home">⌂ Home</button><button class="navbtn" data-view="dashboard">◈ Dashboard</button><button class="navbtn" data-view="households">☷ Households</button><button class="navbtn" data-view="export">⇩ Program Report</button><div class="side-label" style="margin-top:20px">Admin</div><button class="navbtn admin-only" data-view="users">☻ User Management</button><button class="navbtn admin-only" data-view="activity">◷ Recent Activity</button><button class="navbtn admin-only" data-view="backup">⤓ Backup Data</button></aside><main class="main"><section id="view-home" class="view"></section><section id="view-dashboard" class="view hidden"></section><section id="view-households" class="view hidden"></section><section id="view-editor" class="view hidden"></section><section id="view-export" class="view hidden"></section><section id="view-users" class="view hidden"></section><section id="view-activity" class="view hidden"></section><section id="view-backup" class="view hidden"></section></main></div></div>
+<div id="app" class="hidden"><header class="topbar"><div class="brand"><div class="logo"><img src="https://www.governmentjobs.com/AgencyPages/weho/agencyImages/download/weho_white_on_blue.jpg" alt="City of West Hollywood logo"></div><div><div class="brand-title">LACAHSA Renter Protection & Homelessness Prevention Reporting Platform</div><div class="brand-sub">Homelessness Prevention & Housing Stabilization · FY26</div></div></div><div class="top-actions"><span class="pill" id="agency-pill">—</span><span class="pill" id="role-pill">—</span><span class="pill" id="user-pill">—</span><button class="btn secondary sm" id="logout-btn">Sign out</button></div></header><div class="shell"><aside class="side"><div class="side-label">Workspace</div><button class="navbtn active" data-view="home">⌂ Home</button><button class="navbtn" data-view="dashboard">◈ Dashboard</button><button class="navbtn" data-view="households">☷ Households</button><button class="navbtn" data-view="export">⇩ Program Report</button><div class="side-label" style="margin-top:20px">Admin</div><button class="navbtn admin-only" data-view="users">☻ User Management</button><button class="navbtn admin-only" data-view="activity">◷ Recent Activity</button><button class="navbtn" data-view="backup">⤓ Data Exports</button></aside><main class="main"><section id="view-home" class="view"></section><section id="view-dashboard" class="view hidden"></section><section id="view-households" class="view hidden"></section><section id="view-editor" class="view hidden"></section><section id="view-export" class="view hidden"></section><section id="view-users" class="view hidden"></section><section id="view-activity" class="view hidden"></section><section id="view-backup" class="view hidden"></section></main></div></div>
 <div id="user-modal" class="modal"><div class="modal-card"><div class="modal-head"><strong id="user-modal-title">Add User</strong><button class="btn secondary sm" onclick="closeUserModal()">Close</button></div><div class="modal-body"><form id="user-form"><input type="hidden" id="um-original-email"><div class="form-grid"><div class="field"><label>Name</label><input id="um-name" required></div><div class="field"><label>Email</label><input id="um-email" type="email" required></div><div class="field"><label>Agency affiliation</label><select id="um-agency" required></select></div><div class="field"><label>User type</label><select id="um-role" required><option value="agency_user">Agency User</option><option value="agency_admin">Agency Admin</option><option value="city_viewer">City Viewer</option><option value="city_admin">City Admin</option></select></div><div class="field"><label>Status</label><select id="um-active"><option value="true">Active</option><option value="false">Inactive</option></select></div></div><div style="display:flex;justify-content:flex-end;gap:10px;margin-top:12px"><button type="button" class="btn secondary" onclick="closeUserModal()">Cancel</button><button class="btn" type="submit">Save User</button></div></form></div></div></div>
 <div id="toast" class="toast"></div>
 <script>
@@ -524,7 +525,190 @@ function populateAgencySelect(){let s=document.getElementById('um-agency');s.inn
 async function saveUser(e){e.preventDefault();let payload={p_email:document.getElementById('um-email').value.trim().toLowerCase(),p_name:document.getElementById('um-name').value.trim(),p_agency_id:document.getElementById('um-agency').value,p_user_type:document.getElementById('um-role').value,p_active:document.getElementById('um-active').value==='true'};if(DEMO_MODE){toast('Saved user (demo)','ok');closeUserModal();return}let {error}=await sb.rpc('rphp_admin_upsert_user',payload);if(error){toast('User save failed: '+error.message,'err');return}toast('User saved','ok');closeUserModal();await loadUsers();renderUsers()}
 async function setActive(email,active){if(!confirm(`${active?'Reactivate':'Deactivate'} ${email}?`))return;let {error}=await sb.rpc('rphp_admin_set_user_active',{p_email:email,p_active:active});if(error){toast('Update failed: '+error.message,'err');return}toast('User updated','ok');await loadUsers();renderUsers()}
 function renderActivity(){let rows=state.activity.map(a=>`<tr><td>${new Date(a.created_at).toLocaleString()}</td><td>${esc(a.actor_email||'—')}</td><td>${esc(agencyName(a.agency_id))}</td><td>${esc(a.hh_id||'—')}</td><td>${esc(a.action)}</td></tr>`).join('')||'<tr><td colspan="5">No activity.</td></tr>';document.getElementById('view-activity').innerHTML=`<div class="page-head"><div><h1 class="page-title">Recent Activity</h1><p class="page-sub">Admin-only audit trail.</p></div></div><div class="table-wrap"><table><thead><tr><th>Date</th><th>User</th><th>Agency</th><th>Household</th><th>Action</th></tr></thead><tbody>${rows}</tbody></table></div>`}
-function renderBackup(){document.getElementById('view-backup').innerHTML=`<div class="page-head"><div><h1 class="page-title">Backup Data</h1><p class="page-sub">Admin-only JSON export of the visible database records.</p></div><button class="btn" onclick="backup()">Download Backup</button></div><div class="card"><div class="card-body">Use this to create a point-in-time backup of household records, user records, and recent activity. Restore/import is intentionally not included to avoid accidental overwrites.</div></div>`}function backup(){let blob=new Blob([JSON.stringify({exportedAt:new Date().toISOString(),households:state.households,users:state.users,activity:state.activity},null,2)],{type:'application/json'});let a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='rphp_backup_'+new Date().toISOString().slice(0,10)+'.json';a.click();URL.revokeObjectURL(a.href)}
-init().catch(e=>{console.error(e);document.getElementById('login-msg').className='msg err';document.getElementById('login-msg').textContent=e.message||String(e)});
-</script>
-</body></html>
+
+function exportScopeHouseholds(scope='current'){
+  let h = isCity() ? state.households : state.households.filter(x=>x.agency_id===state.profile.agency_id);
+  if(isCity() && scope && scope!=='all') h = h.filter(x=>x.agency_id===scope);
+  return h;
+}
+function exportSafe(v){
+  if(v===null||v===undefined) return '';
+  if(typeof v==='object') return JSON.stringify(v);
+  return String(v);
+}
+function csvEscape(v){
+  v=exportSafe(v);
+  return /[",\n\r]/.test(v) ? `"${v.replace(/"/g,'""')}"` : v;
+}
+function downloadText(filename, content, mime='text/csv;charset=utf-8;'){
+  let blob=new Blob([content],{type:mime});
+  let a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download=filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(a.href);
+}
+function rowsToCsv(rows){
+  if(!rows.length) return '';
+  let headers=Object.keys(rows[0]);
+  return headers.join(',')+'\n'+rows.map(r=>headers.map(h=>csvEscape(r[h])).join(',')).join('\n');
+}
+function exportFileDate(){return new Date().toISOString().slice(0,10)}
+function daysBetween(a,b){
+  a=dateOnly(a); b=dateOnly(b)||new Date().toISOString().slice(0,10);
+  if(!a) return '';
+  let ad=new Date(a+'T00:00:00'), bd=new Date(b+'T00:00:00');
+  if(isNaN(ad)||isNaN(bd)) return '';
+  return Math.max(0,Math.round((bd-ad)/(1000*60*60*24)));
+}
+function stableLabel(h){
+  let s=stable(h);
+  if(s==='stable') return 'Yes';
+  if(s==='unstable') return 'No';
+  return 'Pending';
+}
+function recordStatus(h){
+  return (h.housing_at_exit||h.assistance_end) ? 'Exited / Closed' : 'Active / Open';
+}
+function exportAgencyLabel(scope){
+  if(!isCity()) return agencyName(state.profile.agency_id);
+  return scope==='all'?'all-agencies':scope;
+}
+function householdExportRows(households){
+  return households.map(h=>({
+    agency_id:h.agency_id,
+    agency_name:agencyName(h.agency_id),
+    hh_id:h.hh_id,
+    intake_date:dateOnly(h.intake_date),
+    intake_quarter:fiscalQuarter(h.intake_date),
+    fiscal_year:fiscalQuarter(h.intake_date).replace(/^Q\d\s*/,''),
+    household_composition:h.hh_composition||'',
+    household_size:h.hh_size||'',
+    monthly_income:h.monthly_income||'',
+    housing_at_intake:h.housing_at_intake||'',
+    age_primary:h.age_primary||'',
+    age_band:ageBand(h.age_primary),
+    race_ethnicity:h.race_ethnicity||'',
+    gender:h.gender||'',
+    veteran:h.veteran||'',
+    disability:h.disability||'',
+    eligible:h.eligible||'',
+    qualifying_event:h.qualifying_event||'',
+    assistance_start:dateOnly(h.assistance_start),
+    assistance_end:dateOnly(h.assistance_end),
+    arrears_flag:h.arrears_flag||'',
+    arrears_amount:h.arrears_amount||0,
+    benefits_cert:h.benefits_cert||'',
+    housing_at_entry:h.housing_at_entry||'',
+    housing_at_exit:h.housing_at_exit||'',
+    housing_90day:h.housing_90day||'',
+    stable_at_90_days:stableLabel(h),
+    record_status:recordStatus(h),
+    days_enrolled:daysBetween(h.intake_date,h.assistance_end||new Date().toISOString().slice(0,10)),
+    total_assistance_amount:assistTotal(h),
+    service_session_count:sessions(h),
+    success_story:h.success_story||'',
+    created_at:dateOnly(h.created_at),
+    updated_at:dateOnly(h.updated_at),
+    updated_by:h.updated_by||''
+  }));
+}
+function assistanceExportRows(households){
+  let rows=[];
+  households.forEach(h=>{
+    (h.assistance_log||[]).forEach((e,i)=>{
+      rows.push({
+        agency_id:h.agency_id,
+        agency_name:agencyName(h.agency_id),
+        hh_id:h.hh_id,
+        transaction_index:i+1,
+        assistance_date:dateOnly(e.date),
+        assistance_quarter:fiscalQuarter(e.date),
+        fiscal_year:fiscalQuarter(e.date).replace(/^Q\d\s*/,''),
+        assistance_type:e.type||'',
+        amount:Number(e.amount||0),
+        notes:e.notes||'',
+        household_composition:h.hh_composition||'',
+        household_size:h.hh_size||'',
+        age_primary:h.age_primary||'',
+        age_band:ageBand(h.age_primary),
+        race_ethnicity:h.race_ethnicity||'',
+        gender:h.gender||'',
+        qualifying_event:h.qualifying_event||'',
+        housing_at_intake:h.housing_at_intake||'',
+        record_status:recordStatus(h),
+        stable_at_90_days:stableLabel(h)
+      });
+    });
+  });
+  return rows;
+}
+function serviceExportRows(households){
+  let rows=[];
+  households.forEach(h=>{
+    (h.service_log||[]).forEach((e,i)=>{
+      rows.push({
+        agency_id:h.agency_id,
+        agency_name:agencyName(h.agency_id),
+        hh_id:h.hh_id,
+        service_index:i+1,
+        service_date:dateOnly(e.date),
+        service_quarter:fiscalQuarter(e.date),
+        fiscal_year:fiscalQuarter(e.date).replace(/^Q\d\s*/,''),
+        service_category:e.category||e.type||'',
+        notes:e.notes||'',
+        household_composition:h.hh_composition||'',
+        household_size:h.hh_size||'',
+        age_primary:h.age_primary||'',
+        age_band:ageBand(h.age_primary),
+        race_ethnicity:h.race_ethnicity||'',
+        gender:h.gender||'',
+        qualifying_event:h.qualifying_event||'',
+        housing_at_intake:h.housing_at_intake||'',
+        record_status:recordStatus(h),
+        stable_at_90_days:stableLabel(h)
+      });
+    });
+  });
+  return rows;
+}
+function exportDataset(kind,format='csv'){
+  let scope=document.getElementById('export-scope')?.value||'all';
+  let households=exportScopeHouseholds(scope);
+  let rows = kind==='households' ? householdExportRows(households) : kind==='assistance' ? assistanceExportRows(households) : serviceExportRows(households);
+  let label=exportAgencyLabel(scope).replace(/[^a-z0-9-]+/gi,'-').toLowerCase();
+  if(format==='csv'){
+    downloadText(`rphp_${kind}_${label}_${exportFileDate()}.csv`, rowsToCsv(rows));
+    return;
+  }
+  exportExcel(scope, kind);
+}
+function exportExcel(scope='all', singleKind=null){
+  let households=exportScopeHouseholds(scope);
+  let wb=XLSX.utils.book_new();
+  let addSheet=(rows,name)=>{
+    let ws=XLSX.utils.json_to_sheet(rows);
+    XLSX.utils.book_append_sheet(wb,ws,name);
+  };
+  if(!singleKind||singleKind==='households') addSheet(householdExportRows(households),'Households');
+  if(!singleKind||singleKind==='assistance') addSheet(assistanceExportRows(households),'Assistance Log');
+  if(!singleKind||singleKind==='services') addSheet(serviceExportRows(households),'Service Log');
+  let label=exportAgencyLabel(scope).replace(/[^a-z0-9-]+/gi,'-').toLowerCase();
+  XLSX.writeFile(wb,`rphp_analysis_export_${singleKind||'all'}_${label}_${exportFileDate()}.xlsx`);
+}
+function exportBackupJson(){
+  let scope=document.getElementById('export-scope')?.value||'all';
+  let households=exportScopeHouseholds(scope);
+  let blob=new Blob([JSON.stringify({exportedAt:new Date().toISOString(),scope,households,users:isCity()?state.users:[],activity:isCity()?state.activity:[]},null,2)],{type:'application/json'});
+  let a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download='rphp_backup_'+exportAgencyLabel(scope).replace(/[^a-z0-9-]+/gi,'-').toLowerCase()+'_'+exportFileDate()+'.json';
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+function renderBackup(){
+  let scopeOptions=isCity()?`<option value="all">All agencies</option><option value="apla">APLA Health only</option><option value="ncjw">NCJW | LA only</option>`:`<option value="${state.profile.agency_id}">${agencyName(state.profile.agency_id)}</option>`;
+  document.getElementById('view-backup').innerHTML=`<div class="page-head"><div><h1 class="page-title">Data Exports</h1><p class="page-sub">Export analysis-ready household, assistance, and service data.</p></div></div><div class="card"><div class="card-body"><div class="toolbar" style="margin:0 0 16px"><div class="filters"><label><strong>Export scope:</strong></label><select id="export-scope">${scopeOptions}</select></div></div><p class="section-intro">Exports include all records within the selected scope, regardless of dashboard or report filters. Agency users are limited to their own agency data. City-admin users can export all agencies or one agency at a time.</p><div class="actions-grid"><button class="action-card" onclick="exportDataset('households','csv')"><p class="action-title">Households CSV</p><p class="action-desc">One row per household with calculated fields for pivot tables.</p></button><button class="action-card" onclick="exportDataset('assistance','csv')"><p class="action-title">Assistance Log CSV</p><p class="action-desc">One row per financial assistance transaction.</p></button><button class="action-card" onclick="exportDataset('services','csv')"><p class="action-title">Service Log CSV</p><p class="action-desc">One row per service entry or case management activity.</p></button><button class="action-card primary" onclick="exportExcel(document.getElementById('export-scope').value)"><p class="action-title">Excel Workbook</p><p class="action-desc">Downloads all three datasets as separate sheets.</p></button></div><div style="margin-top:16px;display:flex;gap:10px;flex-wrap:wrap"><button class="btn secondary" onclick="exportBackupJson()">Download JSON Backup</button></div></div></div>`;
+}
