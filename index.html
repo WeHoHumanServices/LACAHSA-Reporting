@@ -475,6 +475,15 @@ function submissionStatusHtml(){
   if(!sub) return `<span class="submission-status draft">Draft / Not Submitted</span>`;
   return `<span class="submission-status submitted">Submitted ${esc(dateOnly(sub.submitted_at))}</span>`;
 }
+
+function submissionCertificationHtml(){
+  let sub=currentSubmission();
+  if(!sub){
+    return `<div class="card" style="margin-top:18px"><div class="card-body"><h2>Submission Certification</h2><p class="muted">This quarterly report has not yet been electronically submitted through the reporting platform.</p></div></div>`;
+  }
+  return `<div class="card" style="margin-top:18px"><div class="card-body"><h2>Submission Certification</h2><p>This report was electronically submitted through the City of West Hollywood RPHP Reporting Platform.</p><table class="print-table"><tbody><tr><td><strong>Submitted By</strong></td><td>${esc(sub.submitted_by||'—')}</td></tr><tr><td><strong>Agency</strong></td><td>${esc(sub.agency_name||agencyName(sub.agency_scope)||'—')}</td></tr><tr><td><strong>Reporting Quarter</strong></td><td>${esc(sub.report_quarter||'—')}</td></tr><tr><td><strong>Submission Date</strong></td><td>${esc(sub.submitted_at?new Date(sub.submitted_at).toLocaleString():'—')}</td></tr></tbody></table></div></div>`;
+}
+
 function submissionPanelHtml(){
   let sub=currentSubmission();
   let disabled = isCity() && (state.reportAgency||'all')==='all';
