@@ -468,11 +468,12 @@ function reportSubmissionScope(){
 }
 function currentSubmission(){
   let scope=reportSubmissionScope();
-  return (state.submissions||[]).find(s=>s.report_quarter===state.reportQuarter && s.agency_scope===scope) || null;
+  return (state.submissions||[]).filter(s=>s.report_quarter===state.reportQuarter && s.agency_scope===scope).sort((a,b)=>String(b.submitted_at||b.updated_at||'').localeCompare(String(a.submitted_at||a.updated_at||'')))[0] || null;
 }
 function submissionStatusHtml(){
   let sub=currentSubmission();
   if(!sub) return `<span class="submission-status draft">Draft / Not Submitted</span>`;
+  if((sub.status||'submitted')==='reopened') return `<span class="submission-status draft">Reopened for Revision</span>`;
   return `<span class="submission-status submitted">Submitted ${esc(dateOnly(sub.submitted_at))}</span>`;
 }
 
@@ -487,8 +488,33 @@ function submissionCertificationHtml(){
 function submissionPanelHtml(){
   let sub=currentSubmission();
   let disabled = isCity() && (state.reportAgency||'all')==='all';
+  let isSubmitted = sub && (sub.status||'submitted')!=='reopened';
   let disabledMsg = disabled ? '<p class="section-intro" style="margin-top:10px">Systemwide reports are for City review and are not submitted as an agency quarterly report. Select APLA or NCJW to submit an agency report.</p>' : '';
-  return `<div class="submission-panel no-print"><div style="display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap"><div><strong>Electronic Submission</strong><div style="margin-top:6px">${submissionStatusHtml()}</div></div><button class="btn gold" ${disabled?'disabled':''} onclick="submitQuarterlyReport()">Submit Quarterly Report</button></div>${disabledMsg}${sub?`<p class="section-intro" style="margin-top:10px">Submitted by ${esc(sub.submitted_by||'—')} on ${esc(sub.submitted_at||'—')}. Submission ID: ${esc(sub.id||'—')}</p>`:''}</div>`;
+  let reopenButton = (isAdmin() && isSubmitted) ? `<button class="btn secondary" onclick="reopenQuarterlyReport()">Reopen Report</button>` : '';
+  let submitLabel = sub && (sub.status||'submitted')==='reopened' ? 'Re-submit Quarterly Report' : 'Submit Quarterly Report';
+  return `<div class="submission-panel no-print"><div style="display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap"><div><strong>Electronic Submission</strong><div style="margin-top:6px">${submissionStatusHtml()}</div></div><div style="display:flex;gap:10px;flex-wrap:wrap">${reopenButton}<button class="btn gold" ${disabled?'disabled':''} onclick="submitQuarterlyReport()">${submitLabel}</button></div></div>${disabledMsg}${sub?`<p class="section-intro" style="margin-top:10px">${(sub.status||'submitted')==='reopened'?'Reopened by':'Submitted by'} ${esc(sub.reopened_by||sub.submitted_by||'—')} on ${esc(sub.reopened_at||sub.submitted_at||'—')}. ${sub.reopen_note?`Reason: ${esc(sub.reopen_note)}. `:''}Submission ID: ${esc(sub.id||'—')}</p>`:''}</div>`;
+}
+async function reopenQuarterlyReport(){
+  if(!isAdmin()){toast('Only City-admin users can reopen submitted reports.','err');return}
+  let sub=currentSubmission();
+  if(!sub){toast('No submitted report found to reopen.','err');return}
+  let note=prompt('Reason for reopening this report for revision?','Corrections requested by City review');
+  if(note===null)return;
+  let row={...sub,status:'reopened',reopened_at:new Date().toISOString(),reopened_by:state.profile.email,reopen_note:note,updated_at:new Date().toISOString()};
+  if(DEMO_MODE){
+    state.submissions=(state.submissions||[]).map(s=>s.id===sub.id?row:s);
+    await logAct('Reopened quarterly report',sub.report_quarter,sub.agency_scope);
+    saveLocal();
+    toast('Report reopened for revision','ok');
+    renderExport();
+    return;
+  }
+  let {error}=await sb.from('rphp_report_submissions').update({status:'reopened',reopened_at:row.reopened_at,reopened_by:row.reopened_by,reopen_note:note,updated_at:row.updated_at}).eq('id',sub.id);
+  if(error){toast('Reopen failed: '+error.message,'err');return}
+  await logAct('Reopened quarterly report',sub.report_quarter,sub.agency_scope);
+  await loadAll();
+  toast('Report reopened for revision','ok');
+  renderExport();
 }
 async function submitQuarterlyReport(){
   let scope=reportSubmissionScope();
@@ -506,6 +532,11 @@ async function submitQuarterlyReport(){
     agency_name: agencyName(scope),
     submitted_by: state.profile.email,
     submitted_at: new Date().toISOString(),
+    status: 'submitted',
+    reopened_at: null,
+    reopened_by: null,
+    reopen_note: null,
+    updated_at: new Date().toISOString(),
     household_count: h.length,
     ytd_household_count: ytd.length,
     report_payload: {quarter:q,agency_scope:scope,household_count:h.length,household_ids:h.map(x=>x.hh_id)}
@@ -591,7 +622,7 @@ function _renderExportImpl(){
 
   <div class="export-section"><h2>7. Household Detail</h2><table class="print-table"><thead><tr><th>ID</th>${isCity()?'<th>Agency</th>':''}<th>Intake</th><th>Reason Support Requested</th><th>Composition</th><th>Assistance</th><th>Sessions</th><th>Outcome</th></tr></thead><tbody>${h.map(x=>`<tr><td>${esc(x.hh_id)}</td>${isCity()?`<td>${esc(agencyName(String(x.agency_id).toLowerCase()))}</td>`:''}<td>${esc(x.intake_date||'—')}</td><td>${esc(x.qualifying_event||'—')}</td><td>${esc(x.hh_composition||'—')}</td><td>${money(assistTotal(x))}</td><td>${sessions(x)}</td><td>${stable(x)==='stable'?'Stable':stable(x)==='unstable'?'Unstable':'Pending'}</td></tr>`).join('')||`<tr><td colspan="${isCity()?8:7}">No records for this reporting period.</td></tr>`}</tbody></table></div>
 
-  <div class="export-section"><h2>Submission Certification</h2><p style="font-size:12px;line-height:1.6;color:#374151">Electronic submission through the reporting platform serves as the official certification and transmittal record for this report.</p><table class="print-table"><tbody><tr><td><strong>Submission Status</strong></td><td>${currentSubmission()?'Submitted':'Draft / Not Submitted'}</td></tr><tr><td><strong>Submitted By</strong></td><td>${currentSubmission()?esc(currentSubmission().submitted_by||'—'):'—'}</td></tr><tr><td><strong>Agency</strong></td><td>${currentSubmission()?esc(currentSubmission().agency_name||agencyName(currentSubmission().agency_scope)||'—'):reportScopeLabel()}</td></tr><tr><td><strong>Reporting Quarter</strong></td><td>${q.label} · ${q.fy}</td></tr><tr><td><strong>Submission Date</strong></td><td>${currentSubmission()&&currentSubmission().submitted_at?esc(new Date(currentSubmission().submitted_at).toLocaleString()):'—'}</td></tr></tbody></table></div></div>`;
+  <div class="export-section"><h2>Submission Certification</h2><p style="font-size:12px;line-height:1.6;color:#374151">Electronic submission through the reporting platform serves as the official certification and transmittal record for this report.</p><table class="print-table"><tbody><tr><td><strong>Submission Status</strong></td><td>${currentSubmission()?((currentSubmission().status||'submitted')==='reopened'?'Reopened for Revision':'Submitted'):'Draft / Not Submitted'}</td></tr><tr><td><strong>Submitted By</strong></td><td>${currentSubmission()?esc(currentSubmission().submitted_by||'—'):'—'}</td></tr><tr><td><strong>Agency</strong></td><td>${currentSubmission()?esc(currentSubmission().agency_name||agencyName(currentSubmission().agency_scope)||'—'):reportScopeLabel()}</td></tr><tr><td><strong>Reporting Quarter</strong></td><td>${q.label} · ${q.fy}</td></tr><tr><td><strong>Submission Date</strong></td><td>${currentSubmission()&&currentSubmission().submitted_at?esc(new Date(currentSubmission().submitted_at).toLocaleString()):'—'}</td></tr>${currentSubmission()&&(currentSubmission().status||'submitted')==='reopened'?`<tr><td><strong>Reopened By</strong></td><td>${esc(currentSubmission().reopened_by||'—')}</td></tr><tr><td><strong>Reopened Date</strong></td><td>${currentSubmission().reopened_at?esc(new Date(currentSubmission().reopened_at).toLocaleString()):'—'}</td></tr><tr><td><strong>Reopen Note</strong></td><td>${esc(currentSubmission().reopen_note||'—')}</td></tr>`:''}</tbody></table></div></div>`;
 }
 
 function breakdownRows(opts,h,fn){let total=h.length,counts={};opts.forEach(o=>counts[o]=0);h.forEach(x=>{let v=fn(x);if(counts[v]!=null)counts[v]++});return opts.filter(o=>counts[o]).map(o=>`<tr><td>${esc(o)}</td><td style="text-align:right"><strong>${counts[o]}</strong> (${pct(total?counts[o]/total:0)})</td></tr>`).join('')||'<tr><td>No data yet</td></tr>'}
