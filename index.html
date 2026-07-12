@@ -241,13 +241,311 @@ input[type="date"]{cursor:pointer;}
   .grid2,.report-mini-grid{gap:10px}
 }
 
+
+
+/* ======================================================================
+   2026 DESKTOP VISUAL MODERNIZATION
+   Presentation-only overrides. Existing workflows, IDs, calculations,
+   database operations, exports, and print-report rules are unchanged.
+   ====================================================================== */
+@media screen {
+  :root {
+    --navy: #1B2F5B;
+    --navy-deep: #142447;
+    --navy-soft: #EEF3FA;
+    --blue: #315F9B;
+    --gold: #C9A24A;
+    --gold-soft: #FFF8E8;
+    --bg: #F3F5F7;
+    --card: #FFFFFF;
+    --text: #243041;
+    --muted: #667384;
+    --line: #DEE4EA;
+    --soft: #F6F8FA;
+    --green: #237A4B;
+    --green-bg: #EAF6EF;
+    --amber: #9A5A00;
+    --amber-bg: #FFF4D8;
+    --red: #B23A32;
+    --red-bg: #FDECEA;
+    --shadow: 0 1px 2px rgba(15, 23, 42, .03), 0 8px 24px rgba(27, 47, 91, .055);
+    --shadow-hover: 0 2px 4px rgba(15, 23, 42, .04), 0 14px 32px rgba(27, 47, 91, .085);
+    --radius: 14px;
+    --border: #DEE4EA;
+    --grey-700: #485667;
+    --grey-50: #F7F9FB;
+    --grey-400: #748193;
+  }
+
+  html { scrollbar-gutter: stable; }
+  body { letter-spacing: -.004em; }
+  button, input, select, textarea { letter-spacing: inherit; }
+  button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible, [tabindex]:focus-visible {
+    outline: 3px solid rgba(201, 162, 74, .42);
+    outline-offset: 2px;
+  }
+
+  /* Authentication */
+  .login { background: radial-gradient(circle at 20% 15%, #2B477F 0, transparent 34%), linear-gradient(145deg, var(--navy-deep), var(--navy)); }
+  .login-card { max-width: 430px; border-radius: 20px; border: 1px solid rgba(255,255,255,.12); box-shadow: 0 32px 90px rgba(8, 18, 39, .38); }
+  .login-head { padding: 32px 34px 28px; border-bottom-width: 3px; }
+  .login-head h1 { font-size: 24px; font-weight: 700; letter-spacing: -.025em; }
+  .login-body { padding: 30px 34px 32px; }
+  .eyebrow { font-weight: 700; letter-spacing: .105em; }
+
+  /* Application header */
+  .topbar {
+    height: 68px;
+    padding: 0 28px;
+    border-bottom: 2px solid var(--gold);
+    box-shadow: 0 2px 14px rgba(10, 24, 52, .18);
+  }
+  .brand { gap: 16px; min-width: 0; }
+  .logo { width: 42px; height: 42px; border-radius: 8px; background: transparent; overflow: hidden; }
+  .logo img { width: 42px; height: 42px; max-width: 42px; max-height: 42px; object-fit: cover; border-radius: 7px; }
+  .brand-title { font-size: 15px; font-weight: 700; letter-spacing: -.012em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 610px; }
+  .brand-sub { font-size: 10.5px; letter-spacing: .025em; color: rgba(255,255,255,.66); }
+  .top-actions { gap: 8px; flex-shrink: 0; }
+  .pill { padding: 5px 10px; font-size: 11.5px; color: rgba(255,255,255,.86); background: rgba(255,255,255,.075); border-color: rgba(255,255,255,.12); }
+
+  /* Buttons */
+  .btn {
+    min-height: 40px;
+    padding: 9px 15px;
+    border-radius: 10px;
+    background: var(--navy);
+    font-weight: 700;
+    box-shadow: 0 1px 2px rgba(15,23,42,.08);
+    transition: background-color .16s ease, border-color .16s ease, color .16s ease, box-shadow .16s ease, transform .16s ease;
+  }
+  .btn:hover:not(:disabled) { filter: none; background: var(--navy-deep); box-shadow: 0 4px 12px rgba(27,47,91,.15); transform: translateY(-1px); }
+  .btn.secondary { color: var(--navy); border-color: #D5DDE6; background: #FFFFFF; box-shadow: 0 1px 2px rgba(15,23,42,.035); }
+  .btn.secondary:hover:not(:disabled) { background: #F7F9FC; border-color: #BFC9D5; }
+  .btn.subtle { background: #F2F5F8; color: #3F4C5D; border-color: #E1E6EB; box-shadow: none; }
+  .btn.subtle:hover:not(:disabled) { background: #E9EEF3; }
+  .btn.gold { background: var(--gold); color: var(--navy-deep); }
+  .btn.gold:hover:not(:disabled) { background: #B99038; }
+  .btn.danger { background: var(--red); }
+  .btn.sm { min-height: 32px; padding: 6px 10px; font-size: 12px; border-radius: 8px; }
+  .btn-icon { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; flex: 0 0 auto; }
+  #logout-btn { color: #FFFFFF; background: rgba(255,255,255,.09); border-color: rgba(255,255,255,.18); box-shadow: none; }
+  #logout-btn:hover { background: rgba(255,255,255,.16); border-color: rgba(255,255,255,.28); }
+
+  /* Sidebar */
+  .shell { min-height: calc(100vh - 68px); }
+  .side {
+    width: 238px;
+    top: 68px;
+    height: calc(100vh - 68px);
+    padding: 24px 0;
+    border-right-color: #E1E6EB;
+    box-shadow: 3px 0 18px rgba(27,47,91,.025);
+    overflow-y: auto;
+  }
+  .side-label { padding: 0 20px 9px; font-size: 10px; font-weight: 700; color: #6F7C8C; letter-spacing: .105em; }
+  .navbtn {
+    width: calc(100% - 20px);
+    min-height: 42px;
+    margin: 2px 10px;
+    padding: 10px 12px;
+    gap: 11px;
+    border-left: 0;
+    border-radius: 10px;
+    color: #4D5A6A;
+    font-size: 13px;
+    font-weight: 600;
+    transition: color .15s ease, background-color .15s ease, box-shadow .15s ease;
+  }
+  .navbtn:hover { background: #F5F7FA; color: var(--navy); }
+  .navbtn.active { background: var(--navy-soft); color: var(--navy); border-left: 0; box-shadow: inset 3px 0 0 var(--gold); }
+  .nav-icon { width: 18px; height: 18px; flex: 0 0 auto; fill: none; stroke: currentColor; stroke-width: 1.75; stroke-linecap: round; stroke-linejoin: round; opacity: .9; }
+  .navbtn.active .nav-icon { opacity: 1; }
+
+  /* Page structure */
+  .main { width: calc(100% - 238px); max-width: 1440px; padding: 32px 36px 52px; margin: 0 auto; }
+  .page-head { align-items: center; margin-bottom: 24px; padding-bottom: 18px; border-bottom: 1px solid #E1E6EB; }
+  .page-title { font-size: 30px; font-weight: 750; letter-spacing: -.032em; }
+  .page-sub { margin-top: 7px; color: var(--muted); font-size: 13.5px; line-height: 1.5; }
+  .toolbar { gap: 14px; margin-bottom: 16px; }
+  .toolbar input, .toolbar select { min-height: 40px; border-color: #D8E0E8; border-radius: 10px; padding: 9px 12px; }
+  .filters { gap: 11px; }
+
+  /* Cards and dashboard surfaces */
+  .cards { gap: 16px; margin-bottom: 22px; }
+  .card { border-color: var(--line); border-radius: var(--radius); box-shadow: var(--shadow); }
+  .card.kpi { position: relative; overflow: hidden; }
+  .card.kpi::before { content: ''; position: absolute; inset: 0 0 auto; height: 3px; background: linear-gradient(90deg, var(--navy), var(--blue)); opacity: .9; }
+  .kpi { padding: 20px; }
+  .kpi .label { font-size: 11.5px; font-weight: 700; letter-spacing: .015em; text-transform: none; color: #586678; }
+  .kpi .value { margin-top: 8px; font-size: 32px; font-weight: 750; letter-spacing: -.035em; font-variant-numeric: tabular-nums; }
+  .kpi .sub { margin-top: 5px; font-size: 12px; color: #718092; }
+  .card-head { padding: 18px 20px 15px; border-bottom-color: #E7EBEF; }
+  .card-title { font-size: 15.5px; font-weight: 700; letter-spacing: -.012em; }
+  .card-body { padding: 20px; }
+  .grid2 { gap: 18px; }
+
+  .actions-grid { gap: 16px; margin-bottom: 22px; }
+  .action-card { min-height: 126px; padding: 20px; border-color: var(--line); box-shadow: var(--shadow); transition: transform .16s ease, box-shadow .16s ease, border-color .16s ease; }
+  .action-card:hover { transform: translateY(-2px); border-color: #AEBFD2; box-shadow: var(--shadow-hover); }
+  .action-card.primary { border-width: 1px; border-color: #D8C28B; box-shadow: inset 0 3px 0 var(--gold), var(--shadow); background: linear-gradient(180deg,#FFFDF7,#FFFFFF 65%); }
+  .action-title { font-size: 16px; font-weight: 700; letter-spacing: -.016em; }
+  .action-desc { color: #687688; line-height: 1.55; }
+  .action-card.primary::after { color: #806016; font-weight: 700; }
+
+  /* Tables */
+  .table-wrap { border-color: var(--line); border-radius: var(--radius); box-shadow: var(--shadow); overflow: auto; }
+  table { font-size: 13px; font-variant-numeric: tabular-nums; }
+  th {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    padding: 11px 13px;
+    background: #F3F6F9;
+    color: #4B596A;
+    border-bottom: 1px solid #DCE3EA;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: .045em;
+  }
+  td { padding: 11px 13px; border-top-color: #E8ECF0; line-height: 1.45; }
+  tbody tr { transition: background-color .12s ease; }
+  tbody tr:hover td { background: #F7F9FC; }
+  .breakdown td:last-child { color: var(--navy); }
+  .delete-link { font-weight: 700; }
+  .pagination { padding: 13px 0 0; }
+
+  .status, .submission-status, .flag-badge {
+    padding: 4px 9px;
+    font-size: 10.5px;
+    font-weight: 700;
+    letter-spacing: .025em;
+    text-transform: none;
+    border: 1px solid transparent;
+  }
+  .status.active { border-color: #B7D2F6; background: #EAF2FD; color: #245AA5; }
+  .status.exited, .submission-status.submitted { border-color: #B9DEC8; background: var(--green-bg); color: var(--green); }
+  .status.inactive { border-color: #E9BBB6; }
+  .status.city { border-color: #D7C9F5; }
+  .status.agency { border-color: #B8DBE8; }
+
+  /* Forms and record editor */
+  .field { gap: 7px; margin-bottom: 16px; }
+  .field label { color: #4B596A; font-size: 12px; font-weight: 650; letter-spacing: .005em; text-transform: none; }
+  .field input, .field select, .field textarea,
+  .log-table input, .log-table select, .expense-table input, .expense-table select, .expense-table textarea,
+  .service-note-box {
+    min-height: 41px;
+    border-color: #D6DEE7;
+    border-radius: 9px;
+    padding: 9px 11px;
+    color: #273446;
+    transition: border-color .15s ease, box-shadow .15s ease, background-color .15s ease;
+  }
+  .field input:hover, .field select:hover, .field textarea:hover,
+  .log-table input:hover, .log-table select:hover, .expense-table input:hover, .expense-table select:hover, .expense-table textarea:hover { border-color: #B9C5D1; }
+  .field input:focus, .field select:focus, .field textarea:focus,
+  .log-table input:focus, .log-table select:focus, .expense-table input:focus, .expense-table select:focus, .expense-table textarea:focus {
+    outline: none;
+    border-color: var(--blue);
+    box-shadow: 0 0 0 3px rgba(49,95,155,.12);
+  }
+  input[readonly], textarea[readonly] { background: #F4F6F8; color: #687688; }
+  .form-grid { gap: 16px; }
+  .section { margin-bottom: 18px; border-color: var(--line); border-radius: var(--radius); box-shadow: var(--shadow); }
+  .section-title {
+    padding: 14px 18px;
+    background: #F4F7FA;
+    color: var(--navy);
+    border-bottom: 1px solid #E0E6EC;
+    box-shadow: inset 4px 0 0 var(--gold);
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: .005em;
+  }
+  .section-body { padding: 20px; }
+  .tabbar { gap: 8px; margin-bottom: 18px; padding: 4px; border: 1px solid #DEE4EA; border-radius: 12px; background: #F5F7F9; width: fit-content; }
+  .tabbtn { padding: 8px 14px; border: 0; border-radius: 8px; background: transparent; font-size: 12.5px; font-weight: 650; }
+  .tabbtn:hover { background: #FFFFFF; }
+  .tabbtn.active { background: var(--navy); box-shadow: 0 2px 6px rgba(27,47,91,.16); }
+  .bottom-actions { padding-top: 16px; border-top-color: #DDE4EA; }
+
+  /* Dashboard controls and analysis */
+  .dashboard-filter-card { padding: 16px 18px; border-color: var(--line); border-radius: var(--radius); box-shadow: var(--shadow); }
+  .dashboard-filter-card .filter-title { font-weight: 700; letter-spacing: .04em; }
+  .dashboard-filter-card .filter-sub { color: #657386; }
+  .period-btn { padding: 7px 12px; border-color: #D8E0E8; background: #F7F9FB; color: #536173; font-weight: 650; }
+  .period-btn:hover { border-color: #AEBFD1; }
+  .period-btn.active { background: var(--navy); border-color: var(--navy); box-shadow: 0 2px 6px rgba(27,47,91,.15); }
+  .metric-note { border-color: #D7E1EE; border-left-color: var(--blue); background: #F5F8FC; color: #536173; }
+  .insight-grid { gap: 14px; margin-bottom: 18px; }
+  .insight-card { padding: 18px; border-color: var(--line); border-radius: var(--radius); box-shadow: var(--shadow); }
+  .insight-card .label { text-transform: none; letter-spacing: .015em; color: #596779; font-weight: 700; }
+  .insight-card .value { font-size: 26px; font-weight: 750; letter-spacing: -.025em; font-variant-numeric: tabular-nums; }
+  .insight-card .sub { color: #748193; font-size: 11.5px; }
+  .chartbox { height: 275px; padding: 4px 2px; }
+
+  /* Fiscal workflow */
+  .submission-panel { padding: 18px; border-color: #DCE3EA; border-radius: var(--radius); background: #F6F8FA; }
+  .submission-grid { gap: 14px; }
+  .doc-upload-card { padding: 18px; border-color: #BFCAD6; border-radius: 12px; background: #F8FAFC; }
+  .doc-row { padding: 12px 14px; border-color: #DDE4EA; border-radius: 10px; box-shadow: 0 1px 2px rgba(15,23,42,.025); }
+  .data-quality-panel { padding: 16px; border-color: #E3C26C; border-left-color: var(--gold); border-radius: 12px; background: #FFFAED; }
+  .closeout-warning { border-color: #E4BE5D; background: #FFF6DE; color: #74470A; }
+  .closeout-ok { border-color: #A9D5BA; background: #EDF8F1; color: #225C3B; }
+  .service-notes:focus, .service-note-box:focus { min-height: 128px; }
+
+  /* Program report screen — on-screen only */
+  .export-page { max-width: 1040px; padding: 34px; border-color: #DDE4EA; border-radius: 16px; box-shadow: var(--shadow); }
+  .export-title { font-size: 26px; font-weight: 750; letter-spacing: -.025em; }
+  .export-section { margin-top: 26px; }
+  .export-section h2 { padding-bottom: 9px; color: var(--navy); border-bottom-color: #DDE4EA; font-size: 13px; font-weight: 750; }
+  .report-cover { padding-bottom: 18px; border-bottom-width: 2px; }
+  .report-kicker { color: #637184; font-weight: 700; }
+  .report-exec, .report-summary-band { border-color: #E1D2A9; border-left-color: var(--gold); background: #FFFBF0; }
+  .report-highlight { border-color: #DDE4EA; box-shadow: 0 1px 2px rgba(15,23,42,.025); }
+  .report-highlight h3 { text-transform: none; letter-spacing: .01em; font-weight: 700; }
+  .report-meta-box { border-color: #DDE4EA; background: #F7F9FB; }
+  .report-meta-box .label { color: #5D6B7C; font-weight: 700; }
+
+  /* Modal and feedback */
+  .modal { background: rgba(15,28,52,.56); backdrop-filter: blur(3px); }
+  .modal-card { border: 1px solid rgba(255,255,255,.22); border-radius: 16px; box-shadow: 0 30px 90px rgba(10,20,40,.32); }
+  .modal-head { padding: 18px 22px; border-bottom-width: 2px; }
+  .modal-body { padding: 22px; }
+  .toast { border-radius: 10px; padding: 11px 15px; box-shadow: 0 10px 30px rgba(15,23,42,.22); }
+  .msg { border-radius: 10px; border: 1px solid transparent; }
+  .msg.ok { border-color: #B9DEC8; }
+  .msg.err { border-color: #E9BBB6; }
+  .msg.info { border-color: #BDD2EF; background: #EDF4FD; color: #28568E; }
+
+  /* Empty states */
+  .empty-cell { padding: 34px !important; text-align: center; }
+  .empty-state { display: grid; justify-items: center; gap: 5px; color: var(--muted); }
+  .empty-state svg { width: 27px; height: 27px; margin-bottom: 4px; fill: none; stroke: #8190A2; stroke-width: 1.55; stroke-linecap: round; stroke-linejoin: round; }
+  .empty-state strong { color: #465466; font-size: 13.5px; }
+  .empty-state span { font-size: 12px; }
+  .empty-state.compact { padding: 4px 0; }
+
+  @media (max-width: 1220px) and (min-width: 1001px) {
+    .topbar { padding: 0 20px; }
+    .brand-title { max-width: 410px; }
+    .pill { padding: 5px 8px; }
+    .main { padding: 28px 26px 46px; }
+    .side { width: 224px; }
+    .main { width: calc(100% - 224px); }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; }
+  }
+}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 </head>
 <body>
 <div id="login" class="login"><div class="login-card"><div class="login-head"><p class="eyebrow">City of West Hollywood</p><h1>LACAHSA Renter Protection & Homelessness Prevention Reporting Platform</h1></div><div class="login-body"><form id="login-form"><div class="field"><label>Email address</label><input type="email" id="login-email" required placeholder="name@agency.org" autocomplete="email"></div><div class="field"><label>Password</label><input type="password" id="login-password" required placeholder="Enter your password" autocomplete="current-password"></div><button class="btn" type="submit" style="width:100%">Sign in</button></form><button class="btn subtle" type="button" id="reset-password-btn" style="width:100%;margin-top:10px">Forgot password / set first password</button><div id="login-msg"></div></div></div></div>
 <div id="reset-password" class="login hidden"><div class="login-card"><div class="login-head"><p class="eyebrow">City of West Hollywood</p><h1>Set Your Password</h1></div><div class="login-body"><form id="reset-password-form"><div class="field"><label>New password</label><input type="password" id="new-password" required minlength="8" placeholder="At least 8 characters" autocomplete="new-password"></div><div class="field"><label>Confirm new password</label><input type="password" id="confirm-password" required minlength="8" placeholder="Re-enter password" autocomplete="new-password"></div><button class="btn" type="submit" style="width:100%">Save password</button></form><div id="reset-msg"></div></div></div></div>
-<div id="app" class="hidden"><header class="topbar"><div class="brand"><div class="logo"><img src="https://www.governmentjobs.com/AgencyPages/weho/agencyImages/download/weho_white_on_blue.jpg" alt="City of West Hollywood logo"></div><div><div class="brand-title">LACAHSA Renter Protection & Homelessness Prevention Reporting Platform</div><div class="brand-sub">Homelessness Prevention & Housing Stabilization · FY26</div></div></div><div class="top-actions"><span class="pill" id="agency-pill">—</span><span class="pill" id="role-pill">—</span><span class="pill" id="user-pill">—</span><button class="btn secondary sm" id="logout-btn">Sign out</button></div></header><div class="shell"><aside class="side"><div class="side-label">Workspace</div><button class="navbtn active" data-view="home">⌂ Home</button><button class="navbtn" data-view="dashboard">◈ Dashboard</button><button class="navbtn" data-view="households">☷ Households</button><button class="navbtn" data-view="export">⇩ Program Report</button><button class="navbtn" data-view="fiscal">$ Fiscal Reporting</button><div class="side-label" style="margin-top:20px">Admin</div><button class="navbtn admin-only" data-view="users">☻ User Management</button><button class="navbtn admin-only" data-view="activity">◷ Recent Activity</button><button class="navbtn export-only" data-view="backup">⤓ Data Exports</button></aside><main class="main"><section id="view-home" class="view"></section><section id="view-dashboard" class="view hidden"></section><section id="view-households" class="view hidden"></section><section id="view-editor" class="view hidden"></section><section id="view-export" class="view hidden"></section><section id="view-fiscal" class="view hidden"></section><section id="view-users" class="view hidden"></section><section id="view-activity" class="view hidden"></section><section id="view-backup" class="view hidden"></section></main></div></div>
+<div id="app" class="hidden"><header class="topbar"><div class="brand"><div class="logo"><img src="https://www.governmentjobs.com/AgencyPages/weho/agencyImages/download/weho_white_on_blue.jpg" alt="City of West Hollywood logo"></div><div><div class="brand-title">LACAHSA Renter Protection & Homelessness Prevention Reporting Platform</div><div class="brand-sub">Homelessness Prevention & Housing Stabilization · FY26</div></div></div><div class="top-actions"><span class="pill" id="agency-pill">—</span><span class="pill" id="role-pill">—</span><span class="pill" id="user-pill">—</span><button class="btn secondary sm" id="logout-btn"><svg class="btn-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M10 17l5-5-5-5"/><path d="M15 12H3"/><path d="M14 3h5a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-5"/></svg><span>Sign out</span></button></div></header><div class="shell"><aside class="side"><div class="side-label">Workspace</div><button class="navbtn active" data-view="home"><svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 10.5V20h13v-9.5"/><path d="M9.5 20v-6h5v6"/></svg><span>Home</span></button><button class="navbtn" data-view="dashboard"><svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg><span>Dashboard</span></button><button class="navbtn" data-view="households"><svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg><span>Households</span></button><button class="navbtn" data-view="export"><svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M8 13h8M8 17h8"/></svg><span>Program Report</span></button><button class="navbtn" data-view="fiscal"><svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/><path d="M16 15h2"/></svg><span>Fiscal Reporting</span></button><div class="side-label" style="margin-top:24px">Administration</div><button class="navbtn admin-only" data-view="users"><svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="7" r="4"/><path d="M3 21v-2a6 6 0 0 1 6-6h1"/><circle cx="17" cy="17" r="3"/><path d="M17 12v2M17 20v2M12 17h2M20 17h2"/></svg><span>User Management</span></button><button class="navbtn admin-only" data-view="activity"><svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/><path d="M3 12H1"/></svg><span>Recent Activity</span></button><button class="navbtn export-only" data-view="backup"><svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14a2 2 0 0 0 2-2v-3"/><path d="M3 16v3a2 2 0 0 0 2 2"/></svg><span>Data Exports</span></button></aside><main class="main"><section id="view-home" class="view"></section><section id="view-dashboard" class="view hidden"></section><section id="view-households" class="view hidden"></section><section id="view-editor" class="view hidden"></section><section id="view-export" class="view hidden"></section><section id="view-fiscal" class="view hidden"></section><section id="view-users" class="view hidden"></section><section id="view-activity" class="view hidden"></section><section id="view-backup" class="view hidden"></section></main></div></div>
 <div id="user-modal" class="modal"><div class="modal-card"><div class="modal-head"><strong id="user-modal-title">Add User</strong><button class="btn secondary sm" onclick="closeUserModal()">Close</button></div><div class="modal-body"><form id="user-form"><input type="hidden" id="um-original-email"><div class="form-grid"><div class="field"><label>Name</label><input id="um-name" required></div><div class="field"><label>Email</label><input id="um-email" type="email" required></div><div class="field"><label>Agency affiliation</label><select id="um-agency" required></select></div><div class="field"><label>User type</label><select id="um-role" required><option value="agency_user">Agency User</option><option value="agency_admin">Agency Admin</option><option value="city_viewer">City Viewer</option><option value="city_admin">City Admin</option></select></div><div class="field"><label>Status</label><select id="um-active"><option value="true">Active</option><option value="false">Inactive</option></select></div></div><div style="display:flex;justify-content:flex-end;gap:10px;margin-top:12px"><button type="button" class="btn secondary" onclick="closeUserModal()">Cancel</button><button class="btn" type="submit">Save User</button></div></form></div></div></div>
 <div id="toast" class="toast"></div><div id="undo-toast" class="undo-toast no-print"><span class="undo-msg"></span><button onclick="performUndo()">Undo</button></div>
 <script>
@@ -405,7 +703,7 @@ async function persistHH(h){
 }
 async function logAct(action,hh,agency){let row={id:uid('act'),action,hh_id:hh||null,agency_id:agency||null,actor_email:state.profile.email,created_at:new Date().toISOString()};if(DEMO_MODE){state.activity.unshift(row);saveLocal();return}let {error}=await sb.from('rphp_activity_log').insert(row);if(error)console.warn('Activity log insert failed',error)}
 function nav(v){document.querySelectorAll('.view').forEach(s=>s.classList.add('hidden'));document.getElementById('view-'+v).classList.remove('hidden');document.querySelectorAll('[data-view]').forEach(b=>b.classList.toggle('active',b.dataset.view===v));if(v==='home')renderHome();if(v==='dashboard')renderDashboard();if(v==='households')renderHHList();if(v==='export')renderExport();if(v==='fiscal')renderFiscal();if(v==='users')renderUsers();if(v==='activity')renderActivity();if(v==='backup')renderBackup()}
-function renderHome(){let h=scopedHouseholds(),total=h.length,assist=h.reduce((s,x)=>s+assistTotal(x),0),active=h.filter(x=>!x.assistance_end).length,stableCount=h.filter(x=>stable(x)==='stable').length;document.getElementById('view-home').innerHTML=`<div class="page-head"><div><h1 class="page-title">Reporting Home</h1><p class="page-sub">${isCity()?'Citywide view across .':'Agency workspace for '+agencyName(state.profile.agency_id)+'.'}</p></div><button class="btn" onclick="newHH()">+ Add Household</button></div>${agencyFilterHtml()}<div class="cards"><div class="card kpi"><div class="label" title="Households with any recorded assistance or service activity this period.">Households with activity</div><div class="value">${total}</div><div class="sub">${filterLabel()}</div></div><div class="card kpi"><div class="label" title="Households without a recorded program exit date.">Active households</div><div class="value">${active}</div></div><div class="card kpi"><div class="label" title="Total dollar amount of direct financial assistance disbursed.">Financial assistance</div><div class="value">${money(assist)}</div></div><div class="card kpi"><div class="label" title="Share of households with a known housing outcome who remained stably housed at the 90-day mark.">Stable at 90 days</div><div class="value">${stableCount}</div></div></div><div class="actions-grid"><button class="action-card" onclick="newHH()"><p class="action-title">Add household</p><p class="action-desc">Create a new prevention/stabilization record.</p></button><button class="action-card" onclick="nav('households')"><p class="action-title">View households</p><p class="action-desc">Search and edit records available to your agency or City role.</p></button><button class="action-card" onclick="nav('dashboard')"><p class="action-title">Dashboard</p><p class="action-desc">Review performance, demographics, assistance, and outcomes.</p></button></div>`}
+function renderHome(){let h=scopedHouseholds(),total=h.length,assist=h.reduce((s,x)=>s+assistTotal(x),0),active=h.filter(x=>!x.assistance_end).length,stableCount=h.filter(x=>stable(x)==='stable').length;document.getElementById('view-home').innerHTML=`<div class="page-head"><div><h1 class="page-title">Reporting Home</h1><p class="page-sub">${isCity()?'Citywide view across APLA Health and NCJW | LA.':'Agency workspace for '+agencyName(state.profile.agency_id)+'.'}</p></div><button class="btn" onclick="newHH()">+ Add Household</button></div>${agencyFilterHtml()}<div class="cards"><div class="card kpi"><div class="label" title="Households with any recorded assistance or service activity this period.">Households with activity</div><div class="value">${total}</div><div class="sub">${filterLabel()}</div></div><div class="card kpi"><div class="label" title="Households without a recorded program exit date.">Active households</div><div class="value">${active}</div></div><div class="card kpi"><div class="label" title="Total dollar amount of direct financial assistance disbursed.">Financial assistance</div><div class="value">${money(assist)}</div></div><div class="card kpi"><div class="label" title="Share of households with a known housing outcome who remained stably housed at the 90-day mark.">Stable at 90 days</div><div class="value">${stableCount}</div></div></div><div class="actions-grid"><button class="action-card" onclick="newHH()"><p class="action-title">Add household</p><p class="action-desc">Create a new prevention/stabilization record.</p></button><button class="action-card" onclick="nav('households')"><p class="action-title">View households</p><p class="action-desc">Search and edit records available to your agency or City role.</p></button><button class="action-card" onclick="nav('dashboard')"><p class="action-title">Dashboard</p><p class="action-desc">Review performance, demographics, assistance, and outcomes.</p></button></div>`}
 function agencyFilterHtml(){if(!isCity())return'';return`<div class="toolbar"><div class="filters"><label><strong>Agency view:</strong></label><select onchange="state.agencyFilter=this.value;renderCurrent()"><option value="all" ${state.agencyFilter==='all'?'selected':''}>All agencies</option><option value="apla" ${state.agencyFilter==='apla'?'selected':''}>APLA Health</option><option value="ncjw" ${state.agencyFilter==='ncjw'?'selected':''}>NCJW | LA</option></select></div></div>`}function filterLabel(){return isCity()?(state.agencyFilter==='all'?'APLA + NCJW':agencyName(state.agencyFilter)):agencyName(state.profile.agency_id)}function renderCurrent(){let v=document.querySelector('.view:not(.hidden)').id.replace('view-','');nav(v)}
 function newHH(){let agency=isCity()?(state.agencyFilter==='all'?'apla':state.agencyFilter):state.profile.agency_id;let used=new Set(state.households.filter(h=>h.agency_id===agency).map(h=>h.hh_id));let prefix=agency==='ncjw'?'NCJW':'APLA';let n=1;while(used.has(`${prefix}-${String(n).padStart(3,'0')}`))n++;let h={id:uid('hh'),hh_id:`${prefix}-${String(n).padStart(3,'0')}`,agency_id:agency,intake_date:'',hh_composition:'',hh_size:null,monthly_income:null,housing_at_intake:'',age_primary:null,race_ethnicity:'',gender:'',transgender_optional:'',veteran:'',disability:'',eligible:'',qualifying_event:'',assistance_start:'',assistance_end:'',arrears_flag:'',arrears_amount:0,benefits_cert:'',housing_at_entry:'',housing_at_exit:'',housing_90day:'',housing_90day_entered_at:null,housing_90day_early_flag:false,housing_90day_early_days:null,success_story:'',assistance_log:[],service_log:[],created_at:new Date().toISOString(),updated_at:new Date().toISOString(),updated_by:state.profile.email};state.currentId=h.id;state.households.unshift(h);renderEditor(h)}
 let _hhSortKey=null,_hhSortDir=1,_hhPage=1;
@@ -420,7 +718,7 @@ function renderHHList(){
   let totalPages=Math.max(1,Math.ceil(list.length/PER_PAGE));
   if(_hhPage>totalPages)_hhPage=totalPages;
   if(_hhPage<1)_hhPage=1;
-  let rows=list.map((x,i)=>{let pg=Math.floor(i/PER_PAGE)+1;return `<tr data-page="${pg}"><td onclick="openHH('${x.id}')"><strong>${esc(x.hh_id)}</strong></td>${isCity()?`<td onclick="openHH('${x.id}')">${esc(agencyName(x.agency_id))}</td>`:''}<td onclick="openHH('${x.id}')">${esc(x.intake_date||'—')}</td><td onclick="openHH('${x.id}')">${esc(x.hh_composition||'—')}</td><td onclick="openHH('${x.id}')">${money(assistTotal(x))}</td><td onclick="openHH('${x.id}')"><span class="status ${x.assistance_end?'exited':'active'}">${x.assistance_end?'Exited':'Active'}</span></td><td onclick="openHH('${x.id}')">${esc(x.updated_by||'—')}</td><td onclick="openHH('${x.id}')">${earlyNinetyDayFlagBadge(x)}</td><td>${canDeleteHH(x)?`<button class="delete-link" onclick="deleteHH('${x.id}')">Delete</button>`:'—'}</td></tr>`}).join('')||`<tr><td colspan="9" style="text-align:center;color:var(--muted);padding:30px">No household records yet.</td></tr>`;
+  let rows=list.map((x,i)=>{let pg=Math.floor(i/PER_PAGE)+1;return `<tr data-page="${pg}"><td onclick="openHH('${x.id}')"><strong>${esc(x.hh_id)}</strong></td>${isCity()?`<td onclick="openHH('${x.id}')">${esc(agencyName(x.agency_id))}</td>`:''}<td onclick="openHH('${x.id}')">${esc(x.intake_date||'—')}</td><td onclick="openHH('${x.id}')">${esc(x.hh_composition||'—')}</td><td onclick="openHH('${x.id}')">${money(assistTotal(x))}</td><td onclick="openHH('${x.id}')"><span class="status ${x.assistance_end?'exited':'active'}">${x.assistance_end?'Exited':'Active'}</span></td><td onclick="openHH('${x.id}')">${esc(x.updated_by||'—')}</td><td onclick="openHH('${x.id}')">${earlyNinetyDayFlagBadge(x)}</td><td>${canDeleteHH(x)?`<button class="delete-link" onclick="deleteHH('${x.id}')">Delete</button>`:'—'}</td></tr>`}).join('')||`<tr><td colspan="9" class="empty-cell"><div class="empty-state"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M19 8v6M22 11h-6"/></svg><strong>No household records yet</strong><span>Add a household to begin program reporting.</span></div></td></tr>`;
   let pagBar=`<div id="hh-pagination" class="pagination no-print"><button class="btn secondary" onclick="hhPageGo(-1)" ${_hhPage<=1?'disabled':''}>Prev</button><span class="page-indicator">Page ${_hhPage} of ${totalPages}</span><button class="btn secondary" onclick="hhPageGo(1)" ${_hhPage>=totalPages?'disabled':''}>Next</button></div>`;
   document.getElementById('view-households').innerHTML=`<div class="page-head"><div><h1 class="page-title">Households</h1><p class="page-sub">Agency users only see their own agency records. City users can view both agencies.</p></div><button class="btn" onclick="newHH()">+ Add Household</button></div>${agencyFilterHtml()}<div class="toolbar"><input id="hh-search" placeholder="Search household ID, agency, demographics…" oninput="filterRows(this.value)"><button class="btn secondary" onclick="loadAll().then(()=>renderHHList())">Refresh</button></div><div class="table-wrap"><table><thead><tr>${thSort('hh_id','Household ID')}${isCity()?thSort('agency','Agency'):''}${thSort('intake','Intake')}${thSort('composition','Composition')}${thSort('assistance','Assistance')}${thSort('status','Status')}${thSort('updated_by','Updated by')}<th>Flags</th><th>Actions</th></tr></thead><tbody id="hh-tbody">${rows}</tbody></table></div>${pagBar}`;
   filterRows('');
@@ -623,7 +921,7 @@ function drawDash(h){let qs=['Q1 FY26','Q2 FY26','Q3 FY26','Q4 FY26'],counts=qs.
   if(state.charts[id]){try{state.charts[id].destroy()}catch(e){}}
   let ctx=document.getElementById(id);
   if(!ctx||typeof Chart==='undefined')return;
-  state.charts[id]=new Chart(ctx,{type,data:{labels,datasets:[{label,data,borderWidth:2,backgroundColor:'rgba(37,99,235,.35)',borderColor:'#1B2F5B',tension:.25,fill:type==='line'}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true}}}});
+  state.charts[id]=new Chart(ctx,{type,data:{labels,datasets:[{label,data,borderWidth:type==='line'?2.5:0,backgroundColor:type==='line'?'rgba(49,95,155,.12)':'rgba(49,95,155,.82)',borderColor:'#1B2F5B',borderRadius:type==='bar'?7:0,borderSkipped:false,maxBarThickness:44,pointRadius:type==='line'?3:0,pointHoverRadius:type==='line'?5:0,pointBackgroundColor:'#1B2F5B',tension:.32,fill:type==='line'}]},options:{responsive:true,maintainAspectRatio:false,interaction:{mode:'index',intersect:false},plugins:{legend:{display:false},tooltip:{backgroundColor:'#17233A',titleColor:'#FFFFFF',bodyColor:'#FFFFFF',padding:11,cornerRadius:8,displayColors:false}},scales:{x:{grid:{display:false},border:{display:false},ticks:{color:'#667384',font:{size:11,weight:'600'}}},y:{beginAtZero:true,border:{display:false},grid:{color:'rgba(100,116,139,.12)'},ticks:{color:'#667384',font:{size:11}}}}}});
 }
 function chart(id,type,labels,data,label){draw(id,type,labels,data,label)}
 
@@ -823,11 +1121,11 @@ function assistanceCompareRows(base,qRange,yRange){let map={};base.forEach(x=>(x
 function serviceCompareRows(base,qRange,yRange){let map={};base.forEach(x=>(x.service_log||[]).forEach(e=>{let k=e.category||e.type||'Other / Unknown';map[k]=map[k]||{q:0,y:0};if(betweenDates(e.date,qRange.start,qRange.end))map[k].q+=1;if(betweenDates(e.date,yRange.start,yRange.end))map[k].y+=1}));return Object.entries(map).filter(([k,v])=>v.q||v.y).sort((a,b)=>b[1].y-a[1].y).map(([k,v])=>`<tr><td>${esc(k)}</td><td>${v.q}</td><td>${v.y}</td></tr>`).join('')||'<tr><td colspan="3">No service activity logged for this period.</td></tr>'}
 
 function breakdownRows(opts,h,fn){let total=h.length,counts={};opts.forEach(o=>counts[o]=0);h.forEach(x=>{let v=fn(x);if(counts[v]!=null)counts[v]++});return opts.filter(o=>counts[o]).map(o=>`<tr><td>${esc(o)}</td><td style="text-align:right"><strong>${counts[o]}</strong> (${pct(total?counts[o]/total:0)})</td></tr>`).join('')||'<tr><td>No data yet</td></tr>'}
-function renderUsers(){if(!isAdmin()){document.getElementById('view-users').innerHTML='<p>Admin access required.</p>';return}let rows=state.users.map(u=>`<tr><td><strong>${esc(u.name||'—')}</strong><br><span style="color:var(--muted)">${esc(u.email)}</span></td><td>${esc(agencyName(u.agency_id))}</td><td><span class="status ${u.user_type.startsWith('city')?'city':'agency'}">${esc(u.user_type.replace('_',' '))}</span></td><td><span class="status ${u.active?'active':'inactive'}">${u.active?'Active':'Inactive'}</span></td><td><button class="btn secondary sm" onclick="openUserModal('${escJs(u.email)}')">Edit</button> <button class="btn ${u.active?'danger':'subtle'} sm" onclick="setActive('${escJs(u.email)}',${!u.active})">${u.active?'Deactivate':'Reactivate'}</button></td></tr>`).join('')||'<tr><td colspan="5">No users found.</td></tr>';document.getElementById('view-users').innerHTML=`<div class="page-head"><div><h1 class="page-title">User Management</h1><p class="page-sub">Maintain name, email, agency affiliation, user type, and active status.</p></div><button class="btn" onclick="openUserModal()">+ Add User</button></div><div class="table-wrap"><table><thead><tr><th>User</th><th>Agency</th><th>User Type</th><th>Status</th><th>Actions</th></tr></thead><tbody>${rows}</tbody></table></div>`}
+function renderUsers(){if(!isAdmin()){document.getElementById('view-users').innerHTML='<p>Admin access required.</p>';return}let rows=state.users.map(u=>`<tr><td><strong>${esc(u.name||'—')}</strong><br><span style="color:var(--muted)">${esc(u.email)}</span></td><td>${esc(agencyName(u.agency_id))}</td><td><span class="status ${u.user_type.startsWith('city')?'city':'agency'}">${esc(u.user_type.replace('_',' '))}</span></td><td><span class="status ${u.active?'active':'inactive'}">${u.active?'Active':'Inactive'}</span></td><td><button class="btn secondary sm" onclick="openUserModal('${escJs(u.email)}')">Edit</button> <button class="btn ${u.active?'danger':'subtle'} sm" onclick="setActive('${escJs(u.email)}',${!u.active})">${u.active?'Deactivate':'Reactivate'}</button></td></tr>`).join('')||'<tr><td colspan="5" class="empty-cell"><div class="empty-state compact"><strong>No users found</strong><span>Add a user to grant platform access.</span></div></td></tr>';document.getElementById('view-users').innerHTML=`<div class="page-head"><div><h1 class="page-title">User Management</h1><p class="page-sub">Maintain name, email, agency affiliation, user type, and active status.</p></div><button class="btn" onclick="openUserModal()">+ Add User</button></div><div class="table-wrap"><table><thead><tr><th>User</th><th>Agency</th><th>User Type</th><th>Status</th><th>Actions</th></tr></thead><tbody>${rows}</tbody></table></div>`}
 function populateAgencySelect(){let s=document.getElementById('um-agency');s.innerHTML=AGENCIES.map(a=>`<option value="${a.id}">${esc(a.name)}</option>`).join('')}function openUserModal(email=null){let u=email?(state.users||[]).find(x=>x.email===email):null;populateAgencySelect();document.getElementById('user-modal-title').textContent=u?'Edit User':'Add User';document.getElementById('um-original-email').value=u?.email||'';document.getElementById('um-name').value=u?.name||'';document.getElementById('um-email').value=u?.email||'';document.getElementById('um-agency').value=u?.agency_id||'apla';document.getElementById('um-role').value=u?.user_type||'agency_user';document.getElementById('um-active').value=String(u?.active??true);document.getElementById('user-modal').classList.add('open')}function closeUserModal(){document.getElementById('user-modal').classList.remove('open')}
 async function saveUser(e){e.preventDefault();let payload={p_email:document.getElementById('um-email').value.trim().toLowerCase(),p_name:document.getElementById('um-name').value.trim(),p_agency_id:document.getElementById('um-agency').value,p_user_type:document.getElementById('um-role').value,p_active:document.getElementById('um-active').value==='true'};if(DEMO_MODE){toast('Saved user (demo)','ok');closeUserModal();return}let {error}=await sb.rpc('rphp_admin_upsert_user',payload);if(error){toast('User save failed: '+error.message,'err');return}toast('User saved','ok');closeUserModal();await loadUsers();renderUsers()}
 async function setActive(email,active){if(!confirm(`${active?'Reactivate':'Deactivate'} ${email}?`))return;let {error}=await sb.rpc('rphp_admin_set_user_active',{p_email:email,p_active:active});if(error){toast('Update failed: '+error.message,'err');return}toast('User updated','ok');await loadUsers();renderUsers()}
-function renderActivity(){let rows=state.activity.map(a=>`<tr><td>${new Date(a.created_at).toLocaleString()}</td><td>${esc(a.actor_email||'—')}</td><td>${esc(agencyName(a.agency_id))}</td><td>${esc(a.hh_id||'—')}</td><td>${esc(a.action)}</td></tr>`).join('')||'<tr><td colspan="5">No activity.</td></tr>';document.getElementById('view-activity').innerHTML=`<div class="page-head"><div><h1 class="page-title">Recent Activity</h1><p class="page-sub">Admin-only audit trail.</p></div></div><div class="table-wrap"><table><thead><tr><th>Date</th><th>User</th><th>Agency</th><th>Household</th><th>Action</th></tr></thead><tbody>${rows}</tbody></table></div>`}
+function renderActivity(){let rows=state.activity.map(a=>`<tr><td>${new Date(a.created_at).toLocaleString()}</td><td>${esc(a.actor_email||'—')}</td><td>${esc(agencyName(a.agency_id))}</td><td>${esc(a.hh_id||'—')}</td><td>${esc(a.action)}</td></tr>`).join('')||'<tr><td colspan="5" class="empty-cell"><div class="empty-state compact"><strong>No recent activity</strong><span>Administrative activity will appear here.</span></div></td></tr>';document.getElementById('view-activity').innerHTML=`<div class="page-head"><div><h1 class="page-title">Recent Activity</h1><p class="page-sub">Admin-only audit trail.</p></div></div><div class="table-wrap"><table><thead><tr><th>Date</th><th>User</th><th>Agency</th><th>Household</th><th>Action</th></tr></thead><tbody>${rows}</tbody></table></div>`}
 
 function exportScopeHouseholds(scope='all'){
   let h = isCity() ? state.households : state.households.filter(x=>x.agency_id===state.profile.agency_id);
