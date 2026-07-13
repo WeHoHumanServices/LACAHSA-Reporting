@@ -539,6 +539,31 @@ input[type="date"]{cursor:pointer;}
     *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; }
   }
 }
+
+
+/* Simplified fiscal invoice packet */
+.fiscal-invoice-cover{border:1px solid var(--line);border-radius:12px;padding:22px;background:#fff}
+.invoice-header{display:flex;justify-content:space-between;gap:24px;align-items:flex-start;border-bottom:3px solid var(--gold);padding-bottom:14px;margin-bottom:18px}
+.invoice-header-meta{text-align:right;font-size:12px;color:#4b5563;line-height:1.65;min-width:250px}
+.invoice-summary-table td:first-child{width:68%}
+.invoice-summary-table td:last-child,.invoice-summary-table th:last-child{text-align:right;white-space:nowrap}
+.invoice-total-row td{background:#f8fafc;font-size:13px}
+.invoice-certification{border:1px solid var(--line);border-left:5px solid var(--navy);border-radius:10px;padding:14px 16px;background:#f8fafc}
+.invoice-certification p{font-size:12px;line-height:1.55;color:#374151;margin:0 0 10px}
+.invoice-page-label{font-size:10px;color:#6b7280;text-align:right;padding-top:12px}
+.fiscal-backup-page{margin-top:28px;border-top:4px solid var(--navy);padding-top:14px}
+.fiscal-backup-page h2{margin:0;color:var(--navy);font-size:18px}
+.backup-purpose{margin:5px 0 14px;color:#4b5563;font-size:12px;line-height:1.5}
+.backup-activity-note{border:1px solid var(--line);background:#f8fafc;border-radius:9px;padding:10px 12px;margin:0 0 12px;font-size:11px;line-height:1.5;color:#374151}
+@media print{
+  #fiscal-invoice .fiscal-invoice-cover{min-height:9.75in;display:flex;flex-direction:column;border:0;border-radius:0;padding:0;break-after:page;page-break-after:always}
+  #fiscal-invoice .invoice-header{margin-bottom:14px}
+  #fiscal-invoice .invoice-certification{margin-top:16px}
+  #fiscal-invoice .invoice-page-label{margin-top:auto}
+  #fiscal-invoice .fiscal-backup-page{margin-top:0;border-top:0;padding-top:0;break-before:page;page-break-before:always}
+  #fiscal-invoice .fiscal-backup-page h2{font-size:15px;border-bottom:2px solid var(--gold);padding-bottom:7px}
+  #fiscal-invoice .backup-purpose{margin-bottom:10px}
+}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 </head>
@@ -1476,7 +1501,81 @@ async function deleteFiscalDocument(id){let scope=fiscalScope();let doc=fiscalDo
 function fiscalBudgetTable(scope=fiscalScope()){return `<table class="print-table"><thead><tr><th>Budget Line Item</th><th>Budget</th><th>YTD Actuals</th><th>Remaining Balance</th><th>% Spent</th></tr></thead><tbody><tr><td>Program Administration</td><td>${money(fiscalBudget(scope,'program_admin'))}</td><td>${money(fiscalYtdProgram(scope))}</td><td>${money(fiscalRemaining('program_admin',scope))}</td><td>${fiscalPct('program_admin',scope)}</td></tr><tr><td>Rental Assistance</td><td>${money(fiscalBudget(scope,'rental_assistance'))}</td><td>${money(fiscalYtdRental(scope))}</td><td>${money(fiscalRemaining('rental_assistance',scope))}</td><td>${fiscalPct('rental_assistance',scope)}</td></tr><tr><td><strong>TOTAL</strong></td><td><strong>${money(fiscalBudget(scope,'total'))}</strong></td><td><strong>${money(fiscalYtdTotal(scope))}</strong></td><td><strong>${money(fiscalRemaining('total',scope))}</strong></td><td><strong>${fiscalPct('total',scope)}</strong></td></tr></tbody></table>`}
 function fiscalSubmissionPanel(){let scope=fiscalScope(),month=state.fiscalMonth||'April',sub=fiscalSubmission(scope,month),issues=reconciliationIssues(scope,month),system=scope==='all',noData=!fiscalMonthHasData(month,scope);let disabled=system||noData||issues.length||sub?.status==='submitted'||sub?.status==='approved';let label=sub?.status==='submitted'?'Submitted':sub?.status==='approved'?'Approved':'Submit Monthly Invoice';let status=system?'Systemwide review only':sub?`Invoice ${sub.status}`:noData?'Empty draft month':'Draft invoice';return `<div class="submission-panel no-print"><div style="display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap"><div><strong>Electronic Submission</strong><div style="margin-top:6px"><span class="submission-status ${sub?'submitted':'draft'}">${esc(status)}</span></div></div><div style="display:flex;gap:10px;flex-wrap:wrap"><button class="btn gold" ${disabled?'disabled':''} onclick="submitFiscalInvoice()">${esc(label)}</button></div></div>${noData?'<p class="section-intro" style="margin-top:10px">No invoice can be submitted until fiscal or program activity is entered for this month.</p>':issues.length?'<p class="section-intro" style="margin-top:10px">Submission is locked until reconciliation flags are resolved.</p>':''}${sub?`<p class="section-intro" style="margin-top:10px">Submitted by ${esc(sub.submitted_by||'—')} on ${esc(sub.submitted_at||'—')}. Submission ID: ${esc(sub.id||'—')}</p>`:''}</div>`}
 function fiscalReviewRows(scope=fiscalScope()){let rows=FISCAL_MONTHS.map(m=>{let sub=scope==='all'?'—':(fiscalSubmission(scope,m)?.status||'draft');let rs=reconciliationSummary(scope,m),detail=rs.status==='no_data'?'No activity entered':`${rs.ok}/${rs.total} checks passed`;return `<tr><td>${m} 2026</td><td>${money(fiscalProgramAdminTotal(m,scope))}</td><td>${money(fiscalRentalTotal(m,scope))}</td><td>${money(programAssistanceTotal(m,scope))}</td><td>${money(fiscalMonthTotal(m,scope))}</td><td>${fiscalDocsFor(m,scope).length}</td><td>${reconciliationBadge(scope,m)}<div style="font-size:11px;color:var(--muted);margin-top:3px">${detail}</div></td><td>${esc(sub)}</td></tr>`}).join('');return rows}
-function fiscalInvoiceHtml(){let scope=fiscalScope(),m=state.fiscalMonth||'April',meta=fiscalMonthRange(m),md=fiscalMonthData(m,scope),sub=fiscalSubmission(scope,m),disbs=fiscalDisbursements(scope).filter(d=>d.billing_month===m+' 2026');let detailRows=disbs.map(d=>`<tr><td>${esc(d.household_id||'')}</td><td>${esc(d.payee||'')}</td><td>${esc(d.payment_date||'')}</td><td>${esc(d.assistance_type||'')}</td><td>${money(d.amount)}</td><td>${esc(d.payment_method||'')}</td><td>${esc(d.reference_no||'')}</td></tr>`).join('')||'<tr><td colspan="7">No disbursements listed for this month.</td></tr>';return `<div class="export-page" id="fiscal-invoice"><div style="display:flex;justify-content:space-between;gap:20px;align-items:flex-start;border-bottom:3px solid var(--gold);padding-bottom:16px"><div><p style="font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:#6b7280;font-weight:900;margin:0 0 6px">City of West Hollywood · Strategic Initiatives Division</p><h1 class="export-title">${esc(agencyName(scope))} — Monthly RPHP Invoice</h1><p style="margin:4px 0;color:#4b5563">Exhibit G · Agreement No. 011900 · Measure A / LACAHSA RPHP Expansion</p></div><div style="text-align:right;font-size:12px;color:#4b5563"><strong>Invoice #: ${esc((scope==='ncjw'?'NCJW':scope==='apla'?'APLA':'SYS')+'-RPHP-'+m+'-2026')}</strong><br>Invoice Date: ${esc(sub?sub.submitted_at:'Draft (not yet submitted) — '+new Date().toLocaleDateString())}<br>Service Period: ${esc(meta.label)}</div></div><div class="report-meta-grid"><div class="report-meta-box"><div class="label" title="Agency this fiscal record belongs to.">Agency</div><div class="value">${esc(agencyName(scope))}</div></div><div class="report-meta-box"><div class="label" title="Month this invoice covers.">Invoice Month</div><div class="value">${esc(m)} 2026</div></div><div class="report-meta-box"><div class="label" title="User who generated this report.">Prepared by</div><div class="value">${esc(state.profile.name||state.profile.email)}</div></div></div><div class="export-section"><h2>Invoice Summary</h2><table class="print-table"><thead><tr><th>Description</th><th>Detail</th><th>Amount</th></tr></thead><tbody><tr><td>Program Administration</td><td>${esc(md.activities||'Staff time and eligible program administration activities.')} ${md.hours?`<br>Hours: ${esc(md.hours)}`:''}</td><td>${money(fiscalProgramAdminTotal(m,scope))}</td></tr><tr><td>Rental Assistance Reimbursement</td><td>Direct financial assistance paid to landlords, utilities, or verified third parties.</td><td>${money(fiscalRentalTotal(m,scope))}</td></tr><tr><td colspan="2"><strong>TOTAL AMOUNT DUE</strong></td><td><strong>${money(fiscalMonthTotal(m,scope))}</strong></td></tr></tbody></table></div><div class="export-section"><h2>Supporting Disbursement Detail</h2><table class="print-table"><thead><tr><th>Household ID</th><th>Payee</th><th>Payment Date</th><th>Assistance Type</th><th>Amount</th><th>Method</th><th>Reference</th></tr></thead><tbody>${detailRows}</tbody></table></div><div class="export-section"><h2>Program/Fiscal Reconciliation</h2><table class="print-table"><thead><tr><th>Check</th><th>Status</th><th>Result</th><th>Reviewer Guidance</th></tr></thead><tbody>${reconciliationPrintRows(scope,m)}</tbody></table></div><div class="export-section"><h2>Submission Certification</h2><p style="font-size:12px;line-height:1.6;color:#374151">Electronic submission through the reporting platform serves as the official certification and transmittal record for this invoice.</p><table class="print-table"><tbody><tr><td><strong>Submission Status</strong></td><td>${sub?(sub.status==='approved'?'Approved':'Submitted'):'Draft / Not Submitted'}</td></tr><tr><td><strong>Submitted By</strong></td><td>${esc(sub?.submitted_by||'—')}</td></tr><tr><td><strong>Agency</strong></td><td>${esc(agencyName(scope))}</td></tr><tr><td><strong>Invoice Month</strong></td><td>${esc(m)} 2026</td></tr><tr><td><strong>Submission Date</strong></td><td>${esc(sub?.submitted_at||'—')}</td></tr></tbody></table></div></div>`}
+function fiscalInvoiceHtml(){
+  let scope=fiscalScope(),m=state.fiscalMonth||'April',meta=fiscalMonthRange(m),md=fiscalMonthData(m,scope),sub=fiscalSubmission(scope,m);
+  let invoiceNo=(scope==='ncjw'?'NCJW':scope==='apla'?'APLA':'SYS')+'-RPHP-'+m+'-2026';
+  let invoiceDate=sub?.submitted_at||('Draft — '+new Date().toLocaleDateString());
+  let submissionStatus=sub?(sub.status==='approved'?'Approved':'Submitted'):'Draft / Not Submitted';
+  let adminExpenses=fiscalAdminExpenses(m,scope);
+  let disbs=fiscalDisbursements(scope).filter(d=>d.billing_month===m+' 2026');
+  let docs=fiscalDocsFor(m,scope);
+  let adminRows=adminExpenses.map(r=>`<tr><td>${esc(r.date||'—')}</td><td>${esc(r.category||'—')}</td><td>${esc(r.employee_vendor||'—')}</td><td>${esc(r.description||'—')}</td><td>${esc(r.hours||'—')}</td><td>${esc(r.gl_account||'—')}</td><td>${money(r.amount)}</td></tr>`).join('');
+  if(!adminRows&&fiscalProgramAdminTotal(m,scope)>0)adminRows=`<tr><td>—</td><td>Summary entry</td><td>—</td><td>${esc(md.activities||'Program administration costs')}</td><td>${esc(md.hours||'—')}</td><td>—</td><td>${money(fiscalProgramAdminTotal(m,scope))}</td></tr>`;
+  if(!adminRows)adminRows='<tr><td colspan="7">No administrative expense detail entered for this month.</td></tr>';
+  let disbursementRows=disbs.map(d=>`<tr><td>${esc(d.household_id||'—')}</td><td>${esc(d.payee||'—')}</td><td>${esc(d.payment_date||'—')}</td><td>${esc(d.assistance_type||'—')}</td><td>${money(d.amount)}</td><td>${esc(d.payment_method||'—')}</td><td>${esc(d.reference_no||'—')}</td></tr>`).join('')||'<tr><td colspan="7">No rental assistance disbursements listed for this month.</td></tr>';
+  let documentRows=docs.map((d,i)=>`<tr><td>${i+1}</td><td>${esc(d.doc_type||'Backup')}</td><td>${esc(d.file_name||'file')}</td><td>${esc(formatBytes(d.file_size))}</td><td>${esc(d.uploaded_by||'—')}</td><td>${esc(d.uploaded_at||'—')}</td></tr>`).join('')||'<tr><td colspan="6">No supporting documents uploaded for this month.</td></tr>';
+  return `<div class="export-page" id="fiscal-invoice">
+    <section class="fiscal-invoice-cover">
+      <div class="invoice-header">
+        <div>
+          <p style="font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:#6b7280;font-weight:900;margin:0 0 6px">City of West Hollywood · Human Services Division</p>
+          <h1 class="export-title">Monthly Reimbursement Invoice</h1>
+          <p style="margin:4px 0;color:#4b5563"><strong>${esc(agencyName(scope))}</strong><br>Measure A / LACAHSA Renter Protection and Homelessness Prevention Program</p>
+        </div>
+        <div class="invoice-header-meta"><strong>Invoice #: ${esc(invoiceNo)}</strong><br>Invoice Date: ${esc(invoiceDate)}<br>Service Period: ${esc(meta.label)}</div>
+      </div>
+      <div class="export-section" style="margin-top:0">
+        <h2>Invoice Summary</h2>
+        <table class="print-table invoice-summary-table">
+          <tbody>
+            <tr><td><strong>Agency</strong></td><td>${esc(agencyName(scope))}</td></tr>
+            <tr><td><strong>Agreement</strong></td><td>Exhibit G · Agreement No. 011900</td></tr>
+            <tr><td>Program Administration</td><td>${money(fiscalProgramAdminTotal(m,scope))}</td></tr>
+            <tr><td>Rental Assistance Reimbursement</td><td>${money(fiscalRentalTotal(m,scope))}</td></tr>
+            <tr class="invoice-total-row"><td><strong>Total Amount Due</strong></td><td><strong>${money(fiscalMonthTotal(m,scope))}</strong></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="export-section invoice-certification">
+        <h2 style="margin-top:0">Submission Certification</h2>
+        <p>Electronic submission through the reporting platform serves as the official certification and transmittal record for this invoice. The submitting agency certifies that the amounts reported are accurate, eligible under the agreement, and supported by records maintained with the invoice.</p>
+        <table class="print-table"><tbody>
+          <tr><td><strong>Submission Status</strong></td><td>${esc(submissionStatus)}</td></tr>
+          <tr><td><strong>Submitted By</strong></td><td>${esc(sub?.submitted_by||'—')}</td></tr>
+          <tr><td><strong>Submitting Agency</strong></td><td>${esc(agencyName(scope))}</td></tr>
+          <tr><td><strong>Invoice Month</strong></td><td>${esc(m)} 2026</td></tr>
+          <tr><td><strong>Submission Date</strong></td><td>${esc(sub?.submitted_at||'—')}</td></tr>
+        </tbody></table>
+      </div>
+      <div class="invoice-page-label">Page 1 · Invoice Summary and Certification</div>
+    </section>
+
+    <section class="fiscal-backup-page">
+      <h2>Backup A · Administrative Expense Detail</h2>
+      <p class="backup-purpose"><strong>Purpose:</strong> Supports the Program Administration amount shown on page 1 and provides transaction-level invoice detail for review.</p>
+      ${md.activities?`<div class="backup-activity-note"><strong>Monthly activities:</strong> ${esc(md.activities)}</div>`:''}
+      <table class="print-table"><thead><tr><th>Date</th><th>Category</th><th>Employee / Vendor</th><th>Description</th><th>Hours</th><th>GL Account</th><th>Amount</th></tr></thead><tbody>${adminRows}<tr><td colspan="6"><strong>Total Administrative Expenses</strong></td><td><strong>${money(fiscalProgramAdminTotal(m,scope))}</strong></td></tr></tbody></table>
+    </section>
+
+    <section class="fiscal-backup-page">
+      <h2>Backup B · Rental Assistance Disbursement Detail</h2>
+      <p class="backup-purpose"><strong>Purpose:</strong> Supports the Rental Assistance Reimbursement amount shown on page 1 and documents the underlying payments.</p>
+      <table class="print-table"><thead><tr><th>Household ID</th><th>Payee</th><th>Payment Date</th><th>Assistance Type</th><th>Amount</th><th>Method</th><th>Reference</th></tr></thead><tbody>${disbursementRows}<tr><td colspan="4"><strong>Total Rental Assistance</strong></td><td><strong>${money(fiscalRentalTotal(m,scope))}</strong></td><td colspan="2"></td></tr></tbody></table>
+    </section>
+
+    <section class="fiscal-backup-page">
+      <h2>Backup C · Program/Fiscal Reconciliation</h2>
+      <p class="backup-purpose"><strong>Purpose:</strong> Documents the automated checks completed before submission. This section is reviewer backup and does not change the amount due on page 1.</p>
+      <table class="print-table"><thead><tr><th>Check</th><th>Status</th><th>Result</th><th>Reviewer Guidance</th></tr></thead><tbody>${reconciliationPrintRows(scope,m)}</tbody></table>
+    </section>
+
+    <section class="fiscal-backup-page">
+      <h2>Backup D · Supporting Documentation Index</h2>
+      <p class="backup-purpose"><strong>Purpose:</strong> Identifies the GL, payroll, check-register, receipt, invoice, allocation, and other files retained in the reporting platform as supporting documentation. Uploaded files remain separate from this generated invoice PDF.</p>
+      <table class="print-table"><thead><tr><th>#</th><th>Document Type</th><th>File Name</th><th>Size</th><th>Uploaded By</th><th>Uploaded</th></tr></thead><tbody>${documentRows}</tbody></table>
+    </section>
+  </div>`
+}
 function setFiscalTab(t){state.fiscalTab=t;renderFiscal()}
 function renderFiscal(){
   if(!state.fiscalMonth)state.fiscalMonth='April'; if(!state.fiscalAgency)state.fiscalAgency=isCity()?'ncjw':state.profile.agency_id;
