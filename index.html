@@ -571,10 +571,21 @@ input[type="date"]{cursor:pointer;}
 .home-kpi-grid .kpi-alert::before{background:linear-gradient(90deg,var(--gold),#D97706)}
 .home-kpi-grid .kpi-alert .value{color:#8A4B08}
 .home-due-panel{margin:0 0 22px}
+.home-due-details>summary{list-style:none;cursor:pointer}
+.home-due-details>summary::-webkit-details-marker{display:none}
 .home-due-panel .card-head{align-items:flex-start}
 .home-due-panel .card-head-copy{min-width:0}
 .home-due-panel .card-head-copy p{margin:4px 0 0;color:var(--muted);font-size:12px;line-height:1.45}
+.home-due-summary-actions{display:flex;align-items:center;gap:10px;flex:0 0 auto}
 .home-due-panel .due-count{flex:0 0 auto}
+.home-due-toggle{display:inline-flex;align-items:center;gap:6px;color:var(--navy);font-size:12px;font-weight:700;white-space:nowrap}
+.home-due-toggle::before{content:'Review details'}
+.home-due-chevron{width:16px;height:16px;transition:transform .18s ease;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.home-due-details[open] .home-due-toggle::before{content:'Hide details'}
+.home-due-details[open] .home-due-chevron{transform:rotate(180deg)}
+.home-due-details>summary:hover{background:#F8FAFC}
+.home-due-details>summary:focus-visible{outline:3px solid rgba(201,162,74,.42);outline-offset:-3px}
+.home-due-details .card-body{border-top:1px solid var(--line)}
 .home-due-panel table td,.home-due-panel table th{white-space:nowrap}
 .home-due-panel table td:first-child,.home-due-panel table th:first-child{white-space:normal}
 .status.overdue{background:var(--red-bg);color:var(--red);border-color:#E9BBB6}
@@ -582,8 +593,17 @@ input[type="date"]{cursor:pointer;}
 .status.upcoming{background:#EAF2FD;color:#245AA5;border-color:#B7D2F6}
 .status.due-today{background:#FFF0D5;color:#8A4B08;border-color:#D9AD4C}
 @media(max-width:1240px){.home-kpi-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
-@media(max-width:780px){.home-kpi-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.home-due-panel .table-wrap{overflow-x:auto}}
-@media(max-width:540px){.home-kpi-grid{grid-template-columns:1fr}}
+@media(max-width:780px){
+  .home-kpi-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .home-due-panel .table-wrap{overflow-x:auto}
+  .home-due-panel .card-head{gap:10px}
+  .home-due-summary-actions{align-items:flex-end;flex-direction:column;gap:6px}
+}
+@media(max-width:540px){
+  .home-kpi-grid{grid-template-columns:1fr}
+  .home-due-panel .card-head{display:flex}
+  .home-due-summary-actions{align-items:flex-end}
+}
 
 </style>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
@@ -784,11 +804,12 @@ function ninetyDayDueStatus(item){
   return {label:`Due in ${d} days`,cls:'upcoming'};
 }
 function homeNinetyDaySchedule(items){
+  const chevron=`<svg class="home-due-chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>`;
   if(!items.length){
-    return `<div class="card home-due-panel" id="home-90day-due"><div class="card-head"><div class="card-head-copy"><h2 class="card-title">90-Day Outcomes Due</h2><p>Due dates are calculated as 90 calendar days after the Assistance End Date.</p></div><span class="status exited due-count">0 pending</span></div><div class="card-body"><div class="msg ok" style="margin:0">No closed households are currently awaiting a 90-day housing outcome.</div></div></div>`;
+    return `<div class="card home-due-panel" id="home-90day-due"><details class="home-due-details"><summary class="card-head"><div class="card-head-copy"><h2 class="card-title">90-Day Outcomes Due</h2><p>No closed households are currently awaiting a 90-day housing outcome.</p></div><div class="home-due-summary-actions"><span class="status exited due-count">0 pending</span><span class="home-due-toggle">${chevron}</span></div></summary><div class="card-body"><div class="msg ok" style="margin:0">Due dates are calculated as 90 calendar days after the Assistance End Date. There are no pending follow-ups to review.</div></div></details></div>`;
   }
   let rows=items.map(item=>{let s=ninetyDayDueStatus(item),h=item.h;return `<tr><td><strong>${esc(h.hh_id||'—')}</strong></td>${isCity()?`<td>${esc(agencyName(h.agency_id))}</td>`:''}<td>${esc(portalDate(item.exitDate))}</td><td><strong>${esc(portalDate(item.dueDate))}</strong></td><td><span class="status ${s.cls}">${esc(s.label)}</span></td><td><button class="btn secondary sm" onclick="openHH('${escJs(h.id)}')">Open record</button></td></tr>`}).join('');
-  return `<div class="card home-due-panel" id="home-90day-due"><div class="card-head"><div class="card-head-copy"><h2 class="card-title">90-Day Outcomes Due</h2><p>Closed households without a recorded 90-day housing status. Due dates are 90 calendar days after the Assistance End Date.</p></div><span class="status due-soon due-count">${items.length} pending</span></div><div class="card-body"><div class="table-wrap"><table><thead><tr><th>Household ID</th>${isCity()?'<th>Agency</th>':''}<th>Assistance ended</th><th>90-day outcome due</th><th>Status</th><th>Action</th></tr></thead><tbody>${rows}</tbody></table></div></div></div>`;
+  return `<div class="card home-due-panel" id="home-90day-due"><details class="home-due-details"><summary class="card-head"><div class="card-head-copy"><h2 class="card-title">90-Day Outcomes Due</h2><p>Closed households without a recorded 90-day housing status. Expand to review household-level due dates.</p></div><div class="home-due-summary-actions"><span class="status due-soon due-count">${items.length} pending</span><span class="home-due-toggle">${chevron}</span></div></summary><div class="card-body"><p class="section-intro">Due dates are calculated as 90 calendar days after the Assistance End Date.</p><div class="table-wrap"><table><thead><tr><th>Household ID</th>${isCity()?'<th>Agency</th>':''}<th>Assistance ended</th><th>90-day outcome due</th><th>Status</th><th>Action</th></tr></thead><tbody>${rows}</tbody></table></div></div></details></div>`;
 }
 function renderHome(){
   let h=scopedHouseholds(),total=h.length,assist=h.reduce((s,x)=>s+assistTotal(x),0),active=h.filter(x=>!x.assistance_end).length,stableCount=h.filter(x=>stable(x)==='stable').length;
