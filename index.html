@@ -564,6 +564,27 @@ input[type="date"]{cursor:pointer;}
   #fiscal-invoice .fiscal-backup-page h2{font-size:15px;border-bottom:2px solid var(--gold);padding-bottom:7px}
   #fiscal-invoice .backup-purpose{margin-bottom:10px}
 }
+
+
+/* Home-screen 90-day outcome schedule */
+.home-kpi-grid{grid-template-columns:repeat(5,minmax(0,1fr))}
+.home-kpi-grid .kpi-alert::before{background:linear-gradient(90deg,var(--gold),#D97706)}
+.home-kpi-grid .kpi-alert .value{color:#8A4B08}
+.home-due-panel{margin:0 0 22px}
+.home-due-panel .card-head{align-items:flex-start}
+.home-due-panel .card-head-copy{min-width:0}
+.home-due-panel .card-head-copy p{margin:4px 0 0;color:var(--muted);font-size:12px;line-height:1.45}
+.home-due-panel .due-count{flex:0 0 auto}
+.home-due-panel table td,.home-due-panel table th{white-space:nowrap}
+.home-due-panel table td:first-child,.home-due-panel table th:first-child{white-space:normal}
+.status.overdue{background:var(--red-bg);color:var(--red);border-color:#E9BBB6}
+.status.due-soon{background:var(--amber-bg);color:var(--amber);border-color:#E3C26C}
+.status.upcoming{background:#EAF2FD;color:#245AA5;border-color:#B7D2F6}
+.status.due-today{background:#FFF0D5;color:#8A4B08;border-color:#D9AD4C}
+@media(max-width:1240px){.home-kpi-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:780px){.home-kpi-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.home-due-panel .table-wrap{overflow-x:auto}}
+@media(max-width:540px){.home-kpi-grid{grid-template-columns:1fr}}
+
 </style>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 </head>
@@ -735,7 +756,51 @@ async function persistHH(h){
 }
 async function logAct(action,hh,agency){let row={id:uid('act'),action,hh_id:hh||null,agency_id:agency||null,actor_email:state.profile.email,created_at:new Date().toISOString()};if(DEMO_MODE){state.activity.unshift(row);saveLocal();return}let {error}=await sb.from('rphp_activity_log').insert(row);if(error)console.warn('Activity log insert failed',error)}
 function nav(v){document.querySelectorAll('.view').forEach(s=>s.classList.add('hidden'));document.getElementById('view-'+v).classList.remove('hidden');document.querySelectorAll('[data-view]').forEach(b=>b.classList.toggle('active',b.dataset.view===v));if(v==='home')renderHome();if(v==='dashboard')renderDashboard();if(v==='households')renderHHList();if(v==='export')renderExport();if(v==='fiscal')renderFiscal();if(v==='users')renderUsers();if(v==='activity')renderActivity();if(v==='backup')renderBackup()}
-function renderHome(){let h=scopedHouseholds(),total=h.length,assist=h.reduce((s,x)=>s+assistTotal(x),0),active=h.filter(x=>!x.assistance_end).length,stableCount=h.filter(x=>stable(x)==='stable').length;document.getElementById('view-home').innerHTML=`<div class="page-head"><div><h1 class="page-title">Reporting Home</h1><p class="page-sub">${isCity()?'Citywide view across APLA Health and NCJW | LA.':'Agency workspace for '+agencyName(state.profile.agency_id)+'.'}</p></div><button class="btn" onclick="newHH()">+ Add Household</button></div>${agencyFilterHtml()}<div class="cards"><div class="card kpi"><div class="label" title="Households with any recorded assistance or service activity this period.">Households with activity</div><div class="value">${total}</div><div class="sub">${filterLabel()}</div></div><div class="card kpi"><div class="label" title="Households without a recorded program exit date.">Active households</div><div class="value">${active}</div></div><div class="card kpi"><div class="label" title="Total dollar amount of direct financial assistance disbursed.">Financial assistance</div><div class="value">${money(assist)}</div></div><div class="card kpi"><div class="label" title="Share of households with a known housing outcome who remained stably housed at the 90-day mark.">Stable at 90 days</div><div class="value">${stableCount}</div></div></div><div class="actions-grid"><button class="action-card" onclick="newHH()"><p class="action-title">Add household</p><p class="action-desc">Create a new prevention/stabilization record.</p></button><button class="action-card" onclick="nav('households')"><p class="action-title">View households</p><p class="action-desc">Search and edit records available to your agency or City role.</p></button><button class="action-card" onclick="nav('dashboard')"><p class="action-title">Dashboard</p><p class="action-desc">Review performance, demographics, assistance, and outcomes.</p></button></div>`}
+function signedCalendarDays(fromDate,toDate){
+  let a=new Date(dateOnly(fromDate)+'T00:00:00'),b=new Date(dateOnly(toDate)+'T00:00:00');
+  if(isNaN(a)||isNaN(b))return null;
+  return Math.round((b-a)/(1000*60*60*24));
+}
+function portalDate(dateStr){
+  let d=new Date(dateOnly(dateStr)+'T00:00:00');
+  return isNaN(d)?'—':d.toLocaleDateString(undefined,{month:'short',day:'numeric',year:'numeric'});
+}
+function pendingNinetyDayOutcomes(households){
+  let today=todayStr();
+  return (households||[])
+    .filter(h=>dateOnly(h.assistance_end)&&!h.housing_90day)
+    .map(h=>{
+      let exitDate=dateOnly(h.assistance_end),dueDate=addDays(exitDate,90),daysUntil=signedCalendarDays(today,dueDate);
+      return {h,exitDate,dueDate,daysUntil};
+    })
+    .sort((a,b)=>(a.dueDate||'').localeCompare(b.dueDate||''));
+}
+function ninetyDayDueStatus(item){
+  let d=item.daysUntil;
+  if(d===null)return {label:'Date unavailable',cls:'upcoming'};
+  if(d<0)return {label:`Overdue ${Math.abs(d)} day${Math.abs(d)===1?'':'s'}`,cls:'overdue'};
+  if(d===0)return {label:'Due today',cls:'due-today'};
+  if(d<=30)return {label:`Due in ${d} day${d===1?'':'s'}`,cls:'due-soon'};
+  return {label:`Due in ${d} days`,cls:'upcoming'};
+}
+function homeNinetyDaySchedule(items){
+  if(!items.length){
+    return `<div class="card home-due-panel" id="home-90day-due"><div class="card-head"><div class="card-head-copy"><h2 class="card-title">90-Day Outcomes Due</h2><p>Due dates are calculated as 90 calendar days after the Assistance End Date.</p></div><span class="status exited due-count">0 pending</span></div><div class="card-body"><div class="msg ok" style="margin:0">No closed households are currently awaiting a 90-day housing outcome.</div></div></div>`;
+  }
+  let rows=items.map(item=>{let s=ninetyDayDueStatus(item),h=item.h;return `<tr><td><strong>${esc(h.hh_id||'—')}</strong></td>${isCity()?`<td>${esc(agencyName(h.agency_id))}</td>`:''}<td>${esc(portalDate(item.exitDate))}</td><td><strong>${esc(portalDate(item.dueDate))}</strong></td><td><span class="status ${s.cls}">${esc(s.label)}</span></td><td><button class="btn secondary sm" onclick="openHH('${escJs(h.id)}')">Open record</button></td></tr>`}).join('');
+  return `<div class="card home-due-panel" id="home-90day-due"><div class="card-head"><div class="card-head-copy"><h2 class="card-title">90-Day Outcomes Due</h2><p>Closed households without a recorded 90-day housing status. Due dates are 90 calendar days after the Assistance End Date.</p></div><span class="status due-soon due-count">${items.length} pending</span></div><div class="card-body"><div class="table-wrap"><table><thead><tr><th>Household ID</th>${isCity()?'<th>Agency</th>':''}<th>Assistance ended</th><th>90-day outcome due</th><th>Status</th><th>Action</th></tr></thead><tbody>${rows}</tbody></table></div></div></div>`;
+}
+function renderHome(){
+  let h=scopedHouseholds(),total=h.length,assist=h.reduce((s,x)=>s+assistTotal(x),0),active=h.filter(x=>!x.assistance_end).length,stableCount=h.filter(x=>stable(x)==='stable').length;
+  let pending90=pendingNinetyDayOutcomes(h),overdue90=pending90.filter(x=>x.daysUntil!==null&&x.daysUntil<0).length,dueSoon90=pending90.filter(x=>x.daysUntil!==null&&x.daysUntil>=0&&x.daysUntil<=30).length;
+  let next90=pending90.find(x=>x.daysUntil!==null&&x.daysUntil>=0),oldestOverdue=pending90.find(x=>x.daysUntil!==null&&x.daysUntil<0);
+  let pending90Sub=pending90.length?[
+    overdue90?`${overdue90} overdue`:'',
+    dueSoon90?`${dueSoon90} due within 30 days`:'',
+    next90?`Next due ${portalDate(next90.dueDate)}`:(oldestOverdue?`Oldest due ${portalDate(oldestOverdue.dueDate)}`:'')
+  ].filter(Boolean).join(' · '):'No pending follow-ups';
+  document.getElementById('view-home').innerHTML=`<div class="page-head"><div><h1 class="page-title">Reporting Home</h1><p class="page-sub">${isCity()?'Citywide view across APLA Health and NCJW | LA.':'Agency workspace for '+agencyName(state.profile.agency_id)+'.'}</p></div><button class="btn" onclick="newHH()">+ Add Household</button></div>${agencyFilterHtml()}<div class="cards home-kpi-grid"><div class="card kpi"><div class="label" title="Households with any recorded assistance or service activity this period.">Households with activity</div><div class="value">${total}</div><div class="sub">${filterLabel()}</div></div><div class="card kpi"><div class="label" title="Households without a recorded program exit date.">Active households</div><div class="value">${active}</div></div><div class="card kpi"><div class="label" title="Total dollar amount of direct financial assistance disbursed.">Financial assistance</div><div class="value">${money(assist)}</div></div><div class="card kpi"><div class="label" title="Households with a known 90-day outcome that remained stably housed.">Stable at 90 days</div><div class="value">${stableCount}</div></div><div class="card kpi kpi-alert"><div class="label" title="Closed households without a recorded 90-day housing outcome. Due dates are 90 days after the Assistance End Date.">Pending 90-day outcomes</div><div class="value">${pending90.length}</div><div class="sub">${esc(pending90Sub)}</div></div></div>${homeNinetyDaySchedule(pending90)}<div class="actions-grid"><button class="action-card" onclick="newHH()"><p class="action-title">Add household</p><p class="action-desc">Create a new prevention/stabilization record.</p></button><button class="action-card" onclick="nav('households')"><p class="action-title">View households</p><p class="action-desc">Search and edit records available to your agency or City role.</p></button><button class="action-card" onclick="nav('dashboard')"><p class="action-title">Dashboard</p><p class="action-desc">Review performance, demographics, assistance, and outcomes.</p></button></div>`;
+}
 function agencyFilterHtml(){if(!isCity())return'';return`<div class="toolbar"><div class="filters"><label><strong>Agency view:</strong></label><select onchange="state.agencyFilter=this.value;renderCurrent()"><option value="all" ${state.agencyFilter==='all'?'selected':''}>All agencies</option><option value="apla" ${state.agencyFilter==='apla'?'selected':''}>APLA Health</option><option value="ncjw" ${state.agencyFilter==='ncjw'?'selected':''}>NCJW | LA</option></select></div></div>`}function filterLabel(){return isCity()?(state.agencyFilter==='all'?'APLA + NCJW':agencyName(state.agencyFilter)):agencyName(state.profile.agency_id)}function renderCurrent(){let v=document.querySelector('.view:not(.hidden)').id.replace('view-','');nav(v)}
 function newHH(){let agency=isCity()?(state.agencyFilter==='all'?'apla':state.agencyFilter):state.profile.agency_id;let used=new Set(state.households.filter(h=>h.agency_id===agency).map(h=>h.hh_id));let prefix=agency==='ncjw'?'NCJW':'APLA';let n=1;while(used.has(`${prefix}-${String(n).padStart(3,'0')}`))n++;let h={id:uid('hh'),hh_id:`${prefix}-${String(n).padStart(3,'0')}`,agency_id:agency,intake_date:'',hh_composition:'',hh_size:null,monthly_income:null,housing_at_intake:'',age_primary:null,race_ethnicity:'',gender:'',transgender_optional:'',veteran:'',disability:'',eligible:'',qualifying_event:'',assistance_start:'',assistance_end:'',arrears_flag:'',arrears_amount:0,benefits_cert:'',housing_at_entry:'',housing_at_exit:'',housing_90day:'',housing_90day_entered_at:null,housing_90day_early_flag:false,housing_90day_early_days:null,success_story:'',assistance_log:[],service_log:[],created_at:new Date().toISOString(),updated_at:new Date().toISOString(),updated_by:state.profile.email};state.currentId=h.id;state.households.unshift(h);renderEditor(h)}
 let _hhSortKey=null,_hhSortDir=1,_hhPage=1;
