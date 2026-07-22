@@ -1025,6 +1025,118 @@ input[type="date"]{cursor:pointer;}
   .dashboard-outcome-meta{grid-template-columns:1fr}
 }
 
+
+/* KPI overflow and responsive text safeguards */
+.dashboard-primary-metric,
+.dashboard-strip-item,
+.dashboard-ytd-stat,
+.dashboard-quality-stat,
+.dashboard-fiscal-stat,
+.dashboard-outcome-meta div {
+  min-width: 0;
+  overflow: hidden;
+}
+
+.dashboard-primary-metric .label,
+.dashboard-primary-metric .sub,
+.dashboard-strip-item .label,
+.dashboard-ytd-stat .label,
+.dashboard-ytd-stat .sub,
+.dashboard-quality-stat .label,
+.dashboard-fiscal-stat .label,
+.dashboard-outcome-meta span {
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  word-break: normal;
+  hyphens: auto;
+}
+
+.dashboard-primary-metric .value {
+  max-width: 100%;
+  font-size: clamp(19px, 2.05vw, 29px);
+  line-height: 1.08;
+  overflow-wrap: anywhere;
+}
+
+.dashboard-strip-item .value {
+  max-width: 100%;
+  font-size: clamp(15px, 1.35vw, 17px);
+  line-height: 1.15;
+  overflow-wrap: anywhere;
+}
+
+.dashboard-ytd-stat .value {
+  max-width: 100%;
+  font-size: clamp(17px, 1.55vw, 21px);
+  line-height: 1.12;
+  overflow-wrap: anywhere;
+}
+
+.dashboard-quality-stat .value {
+  max-width: 100%;
+  font-size: clamp(20px, 2vw, 25px);
+  line-height: 1.1;
+  overflow-wrap: anywhere;
+}
+
+.dashboard-fiscal-stat .value {
+  max-width: 100%;
+  font-size: clamp(16px, 1.45vw, 19px);
+  line-height: 1.12;
+  overflow-wrap: anywhere;
+}
+
+.dashboard-outcome-meta strong {
+  max-width: 100%;
+  font-size: clamp(14px, 1.4vw, 17px);
+  line-height: 1.1;
+  overflow-wrap: anywhere;
+}
+
+.dashboard-primary-metric .label,
+.dashboard-strip-item .label,
+.dashboard-ytd-stat .label,
+.dashboard-quality-stat .label,
+.dashboard-fiscal-stat .label {
+  line-height: 1.3;
+}
+
+.dashboard-primary-metric .sub,
+.dashboard-ytd-stat .sub {
+  line-height: 1.35;
+}
+
+/* Preserve readable card widths before content becomes cramped. */
+@media (max-width: 1320px) and (min-width: 1151px) {
+  .dashboard-primary-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .dashboard-ytd-strip {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    overflow: visible;
+  }
+  .dashboard-ytd-stat {
+    border-bottom: 1px solid #E4E8ED;
+  }
+  .dashboard-ytd-stat:nth-child(3n) {
+    border-right: 0;
+  }
+}
+
+@media (max-width: 1050px) and (min-width: 901px) {
+  .dashboard-fiscal-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 760px) {
+  .dashboard-primary-metric .value,
+  .dashboard-ytd-stat .value,
+  .dashboard-fiscal-stat .value {
+    font-size: 22px;
+  }
+}
+
 </style>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 </head>
