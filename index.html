@@ -1245,10 +1245,13 @@ function fiscalQuarter(d){if(!d)return'';let x=new Date(d+'T00:00:00');if(isNaN(
 function betweenDates(d,start,end){d=dateOnly(d);return !!d&&d>=start&&d<=end}
 function todayStr(){return new Date().toISOString().slice(0,10)}
 function overlapsQuarter(start,end,q){let s=dateOnly(start),e=dateOnly(end)||todayStr();if(!s)return false;return s<=q.end&&e>=q.start}
+// Post-closure follow-up check-ins (e.g., 90-day outcome calls) are documentation, not service activity.
+function isPostExitCheckin(h,e){let end=dateOnly(h&&h.assistance_end);return !!end&&e&&e.category==='Follow-up Check-in'&&dateOnly(e.date)>end}
+function serviceActivity(h){return (h&&h.service_log||[]).filter(e=>!isPostExitCheckin(h,e))}
 function isClosedCarryover(h,r){
   if(r.start<CLOSED_CARRYOVER_RULE_FROM||!h.housing_at_exit||dateOnly(h.assistance_end)||!(dateOnly(h.intake_date)<r.start))return false;
   let inRange=e=>betweenDates(e.date,r.start,r.end);
-  return !(h.assistance_log||[]).some(inRange)&&!(h.service_log||[]).some(inRange);
+  return !(h.assistance_log||[]).some(inRange)&&!serviceActivity(h).some(inRange);
 }
 function inReportQuarter(h,key=state.reportQuarter){
   let q=REPORT_QUARTERS[key];
@@ -1263,7 +1266,7 @@ function inReportQuarter(h,key=state.reportQuarter){
 
   // Count assistance/service log activity during the quarter.
   if((h.assistance_log||[]).some(e=>betweenDates(e.date,q.start,q.end))) return true;
-  if((h.service_log||[]).some(e=>betweenDates(e.date,q.start,q.end))) return true;
+  if(serviceActivity(h).some(e=>betweenDates(e.date,q.start,q.end))) return true;
 
   // Count records that were already open before/through the period and not clearly closed before the period.
   // (Capped at today's date so a still-open case isn't counted into future quarters that haven't happened yet.)
@@ -1518,7 +1521,7 @@ function ytdHouseholds(){
     if(betweenDates(x.intake_date,fy.start,fy.end)) return true;
     if(betweenDates(x.assistance_start,fy.start,fy.end)||betweenDates(x.assistance_end,fy.start,fy.end)||overlapsQuarter(x.assistance_start,x.assistance_end,fy)) return true;
     if((x.assistance_log||[]).some(e=>betweenDates(e.date,fy.start,fy.end))) return true;
-    if((x.service_log||[]).some(e=>betweenDates(e.date,fy.start,fy.end))) return true;
+    if(serviceActivity(x).some(e=>betweenDates(e.date,fy.start,fy.end))) return true;
     return x.intake_date && dateOnly(x.intake_date)<=fy.end && (!x.assistance_end || dateOnly(x.assistance_end)>=fy.start);
   });
 }
@@ -1536,7 +1539,7 @@ function metricsFor(h,key){
     return intake && intake<=range.end && (!end || end>range.end) && !x.housing_at_exit;
   }).length;
   let assistance=h.reduce((sum,x)=>sum+(x.assistance_log||[]).filter(e=>betweenDates(e.date,range.start,range.end)).reduce((s,e)=>s+Number(e.amount||0),0),0);
-  let services=h.reduce((sum,x)=>sum+(x.service_log||[]).filter(e=>betweenDates(e.date,range.start,range.end)).length,0);
+  let services=h.reduce((sum,x)=>sum+serviceActivity(x).filter(e=>betweenDates(e.date,range.start,range.end)).length,0);
   return {newIntakes,closedCases,activeAtEnd,assistance,services};
 }
 function supportReasonRows(h){
@@ -1556,7 +1559,7 @@ function assistanceRowsFor(h,key){
 function serviceRowsFor(h,key){
   let range = key==='all' ? fyRange() : REPORT_QUARTERS[key];
   let map={};
-  h.forEach(x=>(x.service_log||[]).forEach(e=>{
+  h.forEach(x=>serviceActivity(x).forEach(e=>{
     if(betweenDates(e.date,range.start,range.end)){
       let k=e.category||e.type||'Other / Unknown';
       map[k]=(map[k]||0)+1;
@@ -1932,7 +1935,7 @@ function householdsInRange(base,range){
     if(betweenDates(x.intake_date,range.start,range.end)) return true;
     if(betweenDates(x.assistance_start,range.start,range.end)||betweenDates(x.assistance_end,range.start,range.end)||overlapsQuarter(x.assistance_start,x.assistance_end,range)) return true;
     if((x.assistance_log||[]).some(e=>betweenDates(e.date,range.start,range.end))) return true;
-    if((x.service_log||[]).some(e=>betweenDates(e.date,range.start,range.end))) return true;
+    if(serviceActivity(x).some(e=>betweenDates(e.date,range.start,range.end))) return true;
     return x.intake_date && dateOnly(x.intake_date)<=range.end && (!x.assistance_end || dateOnly(x.assistance_end)>=range.start);
   });
 }
@@ -1945,10 +1948,10 @@ function metricsForRange(h,range){
   return {newIntakes,closedCases,activeAtEnd,assistance,services};
 }
 function assistTotalInRange(h,range){return (h.assistance_log||[]).filter(e=>betweenDates(e.date,range.start,range.end)).reduce((s,e)=>s+Number(e.amount||0),0)}
-function serviceCountInRange(h,range){return (h.service_log||[]).filter(e=>betweenDates(e.date,range.start,range.end)).length}
+function serviceCountInRange(h,range){return serviceActivity(h).filter(e=>betweenDates(e.date,range.start,range.end)).length}
 function breakdownCompareRows(opts,qh,ytdh,fn){let qTotal=qh.length,yTotal=ytdh.length,qCounts={},yCounts={};opts.forEach(o=>{qCounts[o]=0;yCounts[o]=0});qh.forEach(x=>{let v=fn(x);if(qCounts[v]!=null)qCounts[v]++});ytdh.forEach(x=>{let v=fn(x);if(yCounts[v]!=null)yCounts[v]++});return opts.filter(o=>qCounts[o]||yCounts[o]).map(o=>`<tr><td>${esc(o)}</td><td><strong>${qCounts[o]}</strong> (${pct(qTotal?qCounts[o]/qTotal:0)})</td><td><strong>${yCounts[o]}</strong> (${pct(yTotal?yCounts[o]/yTotal:0)})</td></tr>`).join('')||'<tr><td colspan="3">No data yet</td></tr>'}
 function assistanceCompareRows(base,qRange,yRange){let map={};base.forEach(x=>(x.assistance_log||[]).forEach(e=>{let k=e.type||'Other / Unknown';map[k]=map[k]||{q:0,y:0};if(betweenDates(e.date,qRange.start,qRange.end))map[k].q+=Number(e.amount||0);if(betweenDates(e.date,yRange.start,yRange.end))map[k].y+=Number(e.amount||0)}));return Object.entries(map).filter(([k,v])=>v.q||v.y).sort((a,b)=>b[1].y-a[1].y).map(([k,v])=>`<tr><td>${esc(k)}</td><td>${money(v.q)}</td><td>${money(v.y)}</td></tr>`).join('')||'<tr><td colspan="3">No assistance logged for this period.</td></tr>'}
-function serviceCompareRows(base,qRange,yRange){let map={};base.forEach(x=>(x.service_log||[]).forEach(e=>{let k=e.category||e.type||'Other / Unknown';map[k]=map[k]||{q:0,y:0};if(betweenDates(e.date,qRange.start,qRange.end))map[k].q+=1;if(betweenDates(e.date,yRange.start,yRange.end))map[k].y+=1}));return Object.entries(map).filter(([k,v])=>v.q||v.y).sort((a,b)=>b[1].y-a[1].y).map(([k,v])=>`<tr><td>${esc(k)}</td><td>${v.q}</td><td>${v.y}</td></tr>`).join('')||'<tr><td colspan="3">No service activity logged for this period.</td></tr>'}
+function serviceCompareRows(base,qRange,yRange){let map={};base.forEach(x=>serviceActivity(x).forEach(e=>{let k=e.category||e.type||'Other / Unknown';map[k]=map[k]||{q:0,y:0};if(betweenDates(e.date,qRange.start,qRange.end))map[k].q+=1;if(betweenDates(e.date,yRange.start,yRange.end))map[k].y+=1}));return Object.entries(map).filter(([k,v])=>v.q||v.y).sort((a,b)=>b[1].y-a[1].y).map(([k,v])=>`<tr><td>${esc(k)}</td><td>${v.q}</td><td>${v.y}</td></tr>`).join('')||'<tr><td colspan="3">No service activity logged for this period.</td></tr>'}
 
 function breakdownRows(opts,h,fn){let total=h.length,counts={};opts.forEach(o=>counts[o]=0);h.forEach(x=>{let v=fn(x);if(counts[v]!=null)counts[v]++});return opts.filter(o=>counts[o]).map(o=>`<tr><td>${esc(o)}</td><td style="text-align:right"><strong>${counts[o]}</strong> (${pct(total?counts[o]/total:0)})</td></tr>`).join('')||'<tr><td>No data yet</td></tr>'}
 function renderUsers(){if(!isAdmin()){document.getElementById('view-users').innerHTML='<p>Admin access required.</p>';return}let rows=state.users.map(u=>`<tr><td><strong>${esc(u.name||'—')}</strong><br><span style="color:var(--muted)">${esc(u.email)}</span></td><td>${esc(agencyName(u.agency_id))}</td><td><span class="status ${u.user_type.startsWith('city')?'city':'agency'}">${esc(u.user_type.replace('_',' '))}</span></td><td><span class="status ${u.active?'active':'inactive'}">${u.active?'Active':'Inactive'}</span></td><td><button class="btn secondary sm" onclick="openUserModal('${escJs(u.email)}')">Edit</button> <button class="btn ${u.active?'danger':'subtle'} sm" onclick="setActive('${escJs(u.email)}',${!u.active})">${u.active?'Deactivate':'Reactivate'}</button></td></tr>`).join('')||'<tr><td colspan="5" class="empty-cell"><div class="empty-state compact"><strong>No users found</strong><span>Add a user to grant platform access.</span></div></td></tr>';document.getElementById('view-users').innerHTML=`<div class="page-head"><div><h1 class="page-title">User Management</h1><p class="page-sub">Maintain name, email, agency affiliation, user type, and active status.</p></div><button class="btn" onclick="openUserModal()">+ Add User</button></div><div class="table-wrap"><table><thead><tr><th>User</th><th>Agency</th><th>User Type</th><th>Status</th><th>Actions</th></tr></thead><tbody>${rows}</tbody></table></div>`}
@@ -2385,13 +2388,147 @@ function fiscalDashboardHtml(){
   return `<div class="dashboard-section-heading"><div><h2>Fiscal alignment</h2><p>Spending and reconciliation context for the current agency scope.</p></div></div><div class="card dashboard-fiscal-card"><div class="card-head"><div class="card-head-copy"><p class="card-title">Fiscal snapshot</p><p>Year-to-date actuals remain visible as supporting context for program performance.</p></div><span class="status city">${FY} YTD</span></div><div class="card-body"><div class="dashboard-fiscal-grid"><div class="dashboard-fiscal-stat"><div class="label">Total actuals</div><div class="value">${money(fiscalYtdTotal(scope))}</div></div><div class="dashboard-fiscal-stat"><div class="label">Rental assistance</div><div class="value">${money(fiscalYtdRental(scope))}</div></div><div class="dashboard-fiscal-stat"><div class="label">Program administration</div><div class="value">${money(fiscalYtdProgram(scope))}</div></div><div class="dashboard-fiscal-stat"><div class="label">Budget spent</div><div class="value">${fiscalPct('total',scope)}</div></div></div><div class="table-wrap"><table><thead><tr><th>Agency</th><th>YTD actuals</th><th>Budget spent</th><th>Current reconciliation</th></tr></thead><tbody>${rows}</tbody></table></div></div></div>`;
 }
 
+// Contract-year archive (.zip): one folder per agency with program data and reports, fiscal invoices, and uploaded backup.
+const JSZIP_SRC='https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js';
+function loadJsZip(){
+  if(window.JSZip) return Promise.resolve(window.JSZip);
+  return new Promise((resolve,reject)=>{
+    let s=document.createElement('script');s.src=JSZIP_SRC;
+    s.onload=()=>window.JSZip?resolve(window.JSZip):reject(new Error('Zip library did not load.'));
+    s.onerror=()=>reject(new Error('Zip library did not load. Check your connection and try again.'));
+    document.head.appendChild(s);
+  });
+}
+function archiveSafe(s){return String(s??'').replace(/[–—]/g,'-').replace(/[\\/:*?"<>|]+/g,'_').replace(/\s+/g,' ').trim()||'file'}
+function archiveAgencyFolder(k){return {apla:'APLA Health',ncjw:'NCJW LA'}[k]||archiveSafe(agencyName(k))}
+function archivePageHtml(title,body){
+  let css=[...document.querySelectorAll('style')].map(s=>s.outerHTML).join('\n');
+  return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${esc(title)}</title>${css}<style>body{background:#fff;padding:24px}.no-print{display:none!important}@media print{body{padding:0}}</style></head><body>${body}</body></html>`;
+}
+// Renders the Program Report for one agency/quarter using the existing report view, then restores the view.
+function archiveProgramReportHtml(agencyKey,quarterKey){
+  let el=document.getElementById('view-export'),prev=el?el.innerHTML:'',saved={q:state.reportQuarter,a:state.reportAgency};
+  try{state.reportQuarter=quarterKey;if(isCity())state.reportAgency=agencyKey;_renderExportImpl();return el.innerHTML}
+  finally{state.reportQuarter=saved.q;state.reportAgency=saved.a;if(el)el.innerHTML=prev}
+}
+function archiveInvoiceHtml(agencyKey,month){
+  let saved={a:state.fiscalAgency,m:state.fiscalMonth};
+  try{if(isCity())state.fiscalAgency=agencyKey;state.fiscalMonth=month;return fiscalInvoiceHtml()}
+  finally{state.fiscalAgency=saved.a;state.fiscalMonth=saved.m}
+}
+function archiveMonthFolder(m){let i=FISCAL_MONTHS.indexOf(m);return String(i+1).padStart(2,'0')+' '+fiscalMonthLabel(m)}
+function archiveStatus(msg){let el=document.getElementById('archive-status');if(el)el.textContent=msg||''}
+function archiveAddCsv(folder,name,rows){if(rows&&rows.length){folder.file(name,'﻿'+rowsToCsv(rows));return rows.length}return 0}
+async function exportContractYearArchive(){
+  let btn=document.getElementById('archive-btn');
+  if(btn) btn.disabled=true;
+  try{
+    archiveStatus('Loading zip library…');
+    let JSZip=await loadJsZip();
+    let y=contractYear(),range=fyRange(),today=todayStr();
+    let scope=isCity()?(document.getElementById('export-scope')?.value||'all'):state.profile.agency_id;
+    let keys=scope==='all'?['apla','ncjw']:[scope];
+    let root=archiveSafe(`LACAHSA RPHP ${y.label} (${y.short}) - exported ${exportFileDate()}`);
+    let zip=new JSZip(),top=zip.folder(root);
+    let quarters=Object.entries(REPORT_QUARTERS).filter(([,q])=>q.start<=today);
+    let inYear=d=>betweenDates(d,range.start,range.end);
+    let summary=[],missing=[];
+
+    if(isCity()&&scope==='all'){
+      archiveStatus('Building systemwide reports…');
+      let sys=top.folder('Systemwide Reports');
+      sys.file('Program Report - Full Year.html',archivePageHtml(`Systemwide Program Report - ${y.label}`,archiveProgramReportHtml('all','all')));
+      quarters.forEach(([k,q])=>sys.file(archiveSafe(`Program Report - ${q.label} (${q.period}).html`),archivePageHtml(`Systemwide Program Report - ${q.label} ${q.fy}`,archiveProgramReportHtml('all',k))));
+    }
+
+    for(const k of keys){
+      let name=archiveAgencyFolder(k),agency=top.folder(name);
+      let program=agency.folder('1 Program'),fiscal=agency.folder('2 Fiscal Reports'),backup=agency.folder('3 Backup Documentation');
+      archiveStatus(`Building ${name} program data…`);
+
+      // Program data: households served in the contract year; logs limited to entries dated in the year.
+      let hh=householdsInRange(state.households.filter(x=>String(x.agency_id).toLowerCase()===k),range);
+      let nH=archiveAddCsv(program,'Households.csv',householdExportRows(hh));
+      let assistRows=assistanceExportRows(hh).filter(r=>inYear(r.assistance_date));
+      let serviceRows=serviceExportRows(hh).filter(r=>inYear(r.service_date));
+      archiveAddCsv(program,'Assistance Log.csv',assistRows);
+      archiveAddCsv(program,'Service Log.csv',serviceRows);
+      if(typeof XLSX!=='undefined'&&nH){
+        let wb=XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(householdExportRows(hh)),'Households');
+        XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(assistRows.length?assistRows:[{note:'No assistance entries this contract year'}]),'Assistance Log');
+        XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(serviceRows.length?serviceRows:[{note:'No service entries this contract year'}]),'Service Log');
+        program.file('Program Data.xlsx',XLSX.write(wb,{bookType:'xlsx',type:'array'}));
+      }
+      let reports=program.folder('Program Reports');
+      reports.file('Program Report - Full Year.html',archivePageHtml(`${agencyName(k)} Program Report - ${y.label}`,archiveProgramReportHtml(k,'all')));
+      quarters.forEach(([qk,q])=>reports.file(archiveSafe(`Program Report - ${q.label} (${q.period}).html`),archivePageHtml(`${agencyName(k)} Program Report - ${q.label} ${q.fy}`,archiveProgramReportHtml(k,qk))));
+      archiveAddCsv(program,'Quarterly Report Submissions.csv',(state.submissions||[]).filter(s=>REPORT_QUARTERS[s.report_quarter]&&String(s.agency_scope).toLowerCase()===k).map(s=>({report_quarter:s.report_quarter,status:s.status,submitted_by:s.submitted_by,submitted_at:s.submitted_at,household_count:s.household_count,ytd_household_count:s.ytd_household_count,reopened_at:s.reopened_at,reopened_by:s.reopened_by,reopen_note:s.reopen_note})));
+
+      // Fiscal: monthly invoices with backup schedules, plus the underlying ledgers.
+      archiveStatus(`Building ${name} fiscal reports…`);
+      let d=fiscalData(k),invoices=fiscal.folder('Monthly Invoices'),months=FISCAL_MONTHS.filter(m=>fiscalMonthHasData(m,k));
+      months.forEach(m=>invoices.file(archiveSafe(`${archiveMonthFolder(m)} Invoice.html`),archivePageHtml(`${agencyName(k)} Invoice - ${fiscalMonthLabel(m)}`,archiveInvoiceHtml(k,m))));
+      archiveAddCsv(fiscal,'Monthly Summary.csv',FISCAL_MONTHS.map(m=>{let sub=fiscalSubmission(k,m);return {month:fiscalMonthLabel(m),program_administration:fiscalProgramAdminTotal(m,k),rental_assistance:fiscalRentalTotal(m,k),total:fiscalMonthTotal(m,k),invoice_status:sub?sub.status:'not submitted',submitted_by:sub?.submitted_by||'',submitted_at:sub?.submitted_at||''}}));
+      archiveAddCsv(fiscal,'Rental Assistance Disbursements.csv',(d.disbursements||[]).map(r=>({billing_month:r.billing_month,household_id:r.household_id,payee:r.payee,payment_date:r.payment_date,assistance_type:r.assistance_type,amount:r.amount,payment_method:r.payment_method,reference_no:r.reference_no})));
+      archiveAddCsv(fiscal,'Administrative Expenses.csv',FISCAL_MONTHS.flatMap(m=>(d.actuals?.[m]?.admin_expenses||[]).map(e=>({month:fiscalMonthLabel(m),date:e.date,category:e.category,employee_vendor:e.employee_vendor,description:e.description,hours:e.hours,gl_account:e.gl_account,amount:e.amount}))));
+      archiveAddCsv(fiscal,'Invoice Submissions.csv',(d.submissions||[]).map(s=>({month:s.month,status:s.status,total:s.total,rental_assistance:s.rental_assistance,program_admin:s.program_admin,submitted_by:s.submitted_by,submitted_at:s.submitted_at,certified_by:s.certified_by,certified_at:s.certified_at,reviewed_by:s.reviewed_by,reviewed_at:s.reviewed_at,reopen_note:s.reopen_note})));
+
+      // Backup: uploaded supporting documents, grouped by invoice month.
+      let docs=d.documents||[],used=new Set(),saved=0;
+      for(const [i,doc] of docs.entries()){
+        archiveStatus(`Downloading ${name} backup ${i+1} of ${docs.length}…`);
+        if(DEMO_MODE){missing.push(`${name}: ${doc.file_name} (demo mode)`);continue}
+        let {data,error}=await sb.storage.from(FISCAL_STORAGE_BUCKET).download(doc.storage_path);
+        if(error||!data){missing.push(`${name}: ${doc.file_name} (${doc.month||'no month'}) - ${error?.message||'not found'}`);continue}
+        let folder=FISCAL_MONTHS.includes(doc.month)?archiveMonthFolder(doc.month):'Unassigned month';
+        let base=archiveSafe(`${doc.doc_type||'Backup'} - ${doc.file_name}`),file=`${folder}/${base}`,n=2;
+        while(used.has(file)){file=`${folder}/${base.replace(/(\.[^.]*)?$/,` (${n++})$1`)}`}
+        used.add(file);backup.file(file,data);saved++;
+      }
+      archiveAddCsv(backup,'Backup Document Index.csv',docs.map(doc=>({month:doc.month?fiscalMonthLabel(doc.month):'',document_type:doc.doc_type,file_name:doc.file_name,size:formatBytes(doc.file_size),uploaded_by:doc.uploaded_by,uploaded_at:doc.uploaded_at})));
+      summary.push(`${name}: ${nH} households, ${assistRows.length} assistance entries, ${serviceRows.length} service entries, ${months.length} invoice month(s), ${saved} of ${docs.length} backup file(s)`);
+    }
+
+    top.file('README.txt',[
+      `LACAHSA Renter Protection & Homelessness Prevention (RPHP) - Contract Year Archive`,
+      `Contract year: ${y.label} (${y.short}), ${range.start} to ${range.end}`,
+      `Agreements: ${keys.map(k=>agencyName(k)+' No. '+FISCAL_AGREEMENTS[k]).join('; ')}`,
+      `Generated: ${new Date().toLocaleString()} by ${state.profile?.email||'unknown'}`,
+      ``,`CONTENTS`,...summary.map(s=>'- '+s),``,
+      `FOLDERS (per agency)`,
+      `1 Program - Households, assistance, and service data (CSV and Excel) and program reports for the full year and each quarter started so far.`,
+      `2 Fiscal Reports - Monthly invoices with backup schedules, monthly summary, disbursement and administrative expense ledgers, invoice submission history.`,
+      `3 Backup Documentation - Supporting files uploaded to the platform, grouped by invoice month, with an index.`,
+      ``,`NOTES`,
+      `- Households are those served during the contract year. Assistance and service logs include only entries dated within the contract year.`,
+      `- Reports and invoices are HTML files. Open in a browser and use Print > Save as PDF for a PDF copy.`,
+      `- Figures reflect the platform as of the generation date. Year 1 remains editable until formal closeout.`,
+      ...(missing.length?[``,`FILES THAT COULD NOT BE INCLUDED`,...missing.map(s=>'- '+s)]:[])
+    ].join('\r\n'));
+
+    archiveStatus('Compressing…');
+    let blob=await zip.generateAsync({type:'blob',compression:'DEFLATE',compressionOptions:{level:6}});
+    let a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=root+'.zip';document.body.appendChild(a);a.click();a.remove();
+    setTimeout(()=>URL.revokeObjectURL(a.href),10000);
+    archiveStatus(missing.length?`Done. ${missing.length} backup file(s) could not be included; see README.txt.`:'Done.');
+    toast(missing.length?`Archive downloaded. ${missing.length} backup file(s) missing; see README.txt.`:'Archive downloaded','ok');
+  }catch(err){
+    console.error('Archive export failed',err);
+    archiveStatus('');
+    toast('Archive export failed: '+(err.message||err),'err');
+  }finally{
+    if(btn) btn.disabled=false;
+  }
+}
+
 function renderBackup(){
   if(!canExportData()){
     document.getElementById('view-backup').innerHTML='<div class="page-head"><div><h1 class="page-title">Data Exports</h1><p class="page-sub">You do not have access to this section.</p></div></div>';
     return;
   }
   let scopeOptions=isCity()?`<option value="all">All agencies</option><option value="apla">APLA Health only</option><option value="ncjw">NCJW | LA only</option>`:`<option value="${state.profile.agency_id}">${agencyName(state.profile.agency_id)}</option>`;
-  document.getElementById('view-backup').innerHTML=`<div class="page-head"><div><h1 class="page-title">Data Exports</h1><p class="page-sub">Export analysis-ready household, assistance, and service data.</p></div></div><div class="card"><div class="card-body"><div class="toolbar" style="margin:0 0 16px"><div class="filters"><label><strong>Export scope:</strong></label><select id="export-scope">${scopeOptions}</select></div></div><p class="section-intro">Exports include all records within the selected scope, regardless of dashboard or report filters. Agency users are limited to their own agency data. City-admin users can export all agencies or one agency at a time.</p><div class="actions-grid"><button class="action-card" onclick="exportDataset('households','csv')"><p class="action-title">Households CSV</p><p class="action-desc">One row per household with calculated fields for pivot tables.</p></button><button class="action-card" onclick="exportDataset('assistance','csv')"><p class="action-title">Assistance Log CSV</p><p class="action-desc">One row per financial assistance transaction.</p></button><button class="action-card" onclick="exportDataset('services','csv')"><p class="action-title">Service Log CSV</p><p class="action-desc">One row per service entry or case management activity.</p></button><button class="action-card primary" onclick="exportExcel(document.getElementById('export-scope').value)"><p class="action-title">Excel Workbook</p><p class="action-desc">Downloads all three datasets as separate sheets.</p></button></div><div style="margin-top:16px;display:flex;gap:10px;flex-wrap:wrap"><button class="btn secondary" onclick="exportBackupJson()">Download JSON Backup</button></div></div></div>`;
+  document.getElementById('view-backup').innerHTML=`<div class="page-head"><div><h1 class="page-title">Data Exports</h1><p class="page-sub">Export analysis-ready household, assistance, and service data.</p></div></div><div class="card"><div class="card-body"><div class="toolbar" style="margin:0 0 16px"><div class="filters"><label><strong>Export scope:</strong></label><select id="export-scope">${scopeOptions}</select></div></div><p class="section-intro">Exports include all records within the selected scope, regardless of dashboard or report filters. Agency users are limited to their own agency data. City-admin users can export all agencies or one agency at a time.</p><div class="actions-grid"><button class="action-card" onclick="exportDataset('households','csv')"><p class="action-title">Households CSV</p><p class="action-desc">One row per household with calculated fields for pivot tables.</p></button><button class="action-card" onclick="exportDataset('assistance','csv')"><p class="action-title">Assistance Log CSV</p><p class="action-desc">One row per financial assistance transaction.</p></button><button class="action-card" onclick="exportDataset('services','csv')"><p class="action-title">Service Log CSV</p><p class="action-desc">One row per service entry or case management activity.</p></button><button class="action-card primary" onclick="exportExcel(document.getElementById('export-scope').value)"><p class="action-title">Excel Workbook</p><p class="action-desc">Downloads all three datasets as separate sheets.</p></button></div><div style="margin-top:16px;display:flex;gap:10px;flex-wrap:wrap"><button class="btn secondary" onclick="exportBackupJson()">Download JSON Backup</button></div></div></div><div class="card" style="margin-top:16px"><div class="card-body"><p class="action-title" style="margin:0 0 4px">Contract Year Archive (.zip)</p><p class="section-intro">Everything for ${esc(contractYear().label)} (${esc(contractYear().short)}) in one download, with a folder per agency: <strong>1 Program</strong> (data and program reports), <strong>2 Fiscal Reports</strong> (monthly invoices and ledgers), and <strong>3 Backup Documentation</strong> (uploaded supporting files). Uses the export scope above. To archive another year, switch the contract year at the top of the page.</p><div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap"><button class="btn" id="archive-btn" onclick="exportContractYearArchive()">Download ${esc(contractYear().short)} Archive</button><span id="archive-status" class="section-intro" style="margin:0"></span></div></div></div>`;
 }
 init().catch(e=>{console.error(e);document.getElementById('login-msg').className='msg err';document.getElementById('login-msg').textContent=e.message||String(e)});
 </script>
