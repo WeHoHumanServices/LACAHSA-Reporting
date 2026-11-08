@@ -2417,6 +2417,24 @@ function archiveInvoiceHtml(agencyKey,month){
   finally{state.fiscalAgency=saved.a;state.fiscalMonth=saved.m}
 }
 function archiveMonthFolder(m){let i=FISCAL_MONTHS.indexOf(m);return String(i+1).padStart(2,'0')+' '+fiscalMonthLabel(m)}
+function archiveStorage(){return DEMO_MODE?null:sb.storage.from(FISCAL_STORAGE_BUCKET)}
+// Recursively lists files under a storage prefix (folders come back with a null id).
+async function archiveListFiles(store,prefix){
+  let out=[];
+  for(let offset=0;;offset+=1000){
+    let {data,error}=await store.list(prefix,{limit:1000,offset,sortBy:{column:'name',order:'asc'}});
+    if(error) throw error;
+    for(const e of data||[]){
+      if(e.name==='.emptyFolderPlaceholder') continue;
+      let path=`${prefix}/${e.name}`;
+      if(e.id===null) out.push(...await archiveListFiles(store,path));
+      else out.push({path,size:e.metadata?.size,created_at:e.created_at});
+    }
+    if(!data||data.length<1000) break;
+  }
+  return out;
+}
+function archiveOriginalName(path){return String(path).split('/').pop().replace(/^\d{10,}_/,'')}
 function archiveStatus(msg){let el=document.getElementById('archive-status');if(el)el.textContent=msg||''}
 function archiveAddCsv(folder,name,rows){if(rows&&rows.length){folder.file(name,'﻿'+rowsToCsv(rows));return rows.length}return 0}
 async function exportContractYearArchive(){
@@ -2474,20 +2492,32 @@ async function exportContractYearArchive(){
       archiveAddCsv(fiscal,'Administrative Expenses.csv',FISCAL_MONTHS.flatMap(m=>(d.actuals?.[m]?.admin_expenses||[]).map(e=>({month:fiscalMonthLabel(m),date:e.date,category:e.category,employee_vendor:e.employee_vendor,description:e.description,hours:e.hours,gl_account:e.gl_account,amount:e.amount}))));
       archiveAddCsv(fiscal,'Invoice Submissions.csv',(d.submissions||[]).map(s=>({month:s.month,status:s.status,total:s.total,rental_assistance:s.rental_assistance,program_admin:s.program_admin,submitted_by:s.submitted_by,submitted_at:s.submitted_at,certified_by:s.certified_by,certified_at:s.certified_at,reviewed_by:s.reviewed_by,reviewed_at:s.reviewed_at,reopen_note:s.reopen_note})));
 
-      // Backup: uploaded supporting documents, grouped by invoice month.
-      let docs=d.documents||[],used=new Set(),saved=0;
-      for(const [i,doc] of docs.entries()){
-        archiveStatus(`Downloading ${name} backup ${i+1} of ${docs.length}…`);
-        if(DEMO_MODE){missing.push(`${name}: ${doc.file_name} (demo mode)`);continue}
-        let {data,error}=await sb.storage.from(FISCAL_STORAGE_BUCKET).download(doc.storage_path);
-        if(error||!data){missing.push(`${name}: ${doc.file_name} (${doc.month||'no month'}) - ${error?.message||'not found'}`);continue}
-        let folder=FISCAL_MONTHS.includes(doc.month)?archiveMonthFolder(doc.month):'Unassigned month';
-        let base=archiveSafe(`${doc.doc_type||'Backup'} - ${doc.file_name}`),file=`${folder}/${base}`,n=2;
-        while(used.has(file)){file=`${folder}/${base.replace(/(\.[^.]*)?$/,` (${n++})$1`)}`}
-        used.add(file);backup.file(file,data);saved++;
+      // Backup: every file in storage for this agency and year. Registered documents keep their type and
+      // uploader; files whose metadata save failed are still included and flagged as unregistered.
+      let docs=d.documents||[],store=archiveStorage(),used=new Set(),saved=0,index=[];
+      let registered=new Map(docs.map(doc=>[doc.storage_path,doc]));
+      let files=docs.map(doc=>({path:doc.storage_path,doc}));
+      if(store){
+        try{
+          for(const f of await archiveListFiles(store,`${FY}/${k}`)) if(!registered.has(f.path)) files.push({path:f.path,size:f.size,uploaded_at:f.created_at});
+        }catch(err){missing.push(`${name}: could not scan storage for unregistered uploads - ${err.message||err}`)}
       }
-      archiveAddCsv(backup,'Backup Document Index.csv',docs.map(doc=>({month:doc.month?fiscalMonthLabel(doc.month):'',document_type:doc.doc_type,file_name:doc.file_name,size:formatBytes(doc.file_size),uploaded_by:doc.uploaded_by,uploaded_at:doc.uploaded_at})));
-      summary.push(`${name}: ${nH} households, ${assistRows.length} assistance entries, ${serviceRows.length} service entries, ${months.length} invoice month(s), ${saved} of ${docs.length} backup file(s)`);
+      for(const [i,f] of files.entries()){
+        archiveStatus(`Downloading ${name} backup ${i+1} of ${files.length}…`);
+        let doc=f.doc,month=doc?doc.month:f.path.split('/')[2],fileName=doc?doc.file_name:archiveOriginalName(f.path);
+        let row={month:FISCAL_MONTHS.includes(month)?fiscalMonthLabel(month):(month||''),document_type:doc?doc.doc_type:'Unregistered upload',file_name:fileName,size:formatBytes(doc?doc.file_size:f.size),uploaded_by:doc?doc.uploaded_by:'',uploaded_at:doc?doc.uploaded_at:(f.uploaded_at?new Date(f.uploaded_at).toLocaleString():''),registered_in_portal:doc?'Yes':'No',included_in_archive:'No',storage_path:f.path};
+        index.push(row);
+        if(!store){missing.push(`${name}: ${fileName} (demo mode)`);continue}
+        let {data,error}=await store.download(f.path);
+        if(error||!data){missing.push(`${name}: ${fileName} (${row.month||'no month'}) - ${error?.message||'not found'}`);continue}
+        let folder=FISCAL_MONTHS.includes(month)?archiveMonthFolder(month):'Unassigned month';
+        let base=archiveSafe(`${doc?(doc.doc_type||'Backup'):'Unregistered'} - ${fileName}`),file=`${folder}/${base}`,n=2;
+        while(used.has(file)){file=`${folder}/${base.replace(/(\.[^.]*)?$/,` (${n++})$1`)}`}
+        used.add(file);backup.file(file,data);saved++;row.included_in_archive='Yes';row.archive_file=file;
+      }
+      let unregistered=files.filter(f=>!f.doc).length;
+      archiveAddCsv(backup,'Backup Document Index.csv',index);
+      summary.push(`${name}: ${nH} households, ${assistRows.length} assistance entries, ${serviceRows.length} service entries, ${months.length} invoice month(s), ${saved} of ${files.length} backup file(s)${unregistered?` (${unregistered} not registered in the portal)`:''}`);
     }
 
     top.file('README.txt',[
@@ -2499,7 +2529,7 @@ async function exportContractYearArchive(){
       `FOLDERS (per agency)`,
       `1 Program - Households, assistance, and service data (CSV and Excel) and program reports for the full year and each quarter started so far.`,
       `2 Fiscal Reports - Monthly invoices with backup schedules, monthly summary, disbursement and administrative expense ledgers, invoice submission history.`,
-      `3 Backup Documentation - Supporting files uploaded to the platform, grouped by invoice month, with an index.`,
+      `3 Backup Documentation - Every supporting file uploaded to the platform for the year, grouped by invoice month, with an index. Files named "Unregistered" were uploaded but are missing from the portal's document list (usually a failed save); they are included so nothing is lost.`,
       ``,`NOTES`,
       `- Households are those served during the contract year. Assistance and service logs include only entries dated within the contract year.`,
       `- Reports and invoices are HTML files. Open in a browser and use Print > Save as PDF for a PDF copy.`,
